@@ -1,0 +1,858 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+<title>AEGIS — Tu red de protección</title>
+<meta name="description" content="AEGIS: tu botón de pánico y red de contactos de confianza. Asesoría en emergencias por voz, ubicación en vivo y modo Acompáñame." />
+<meta name="theme-color" content="#070405" />
+<link rel="manifest" href="/manifest.json" />
+<link rel="icon" type="image/png" href="/icon-192.png" />
+<link rel="apple-touch-icon" href="/icon-192.png" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="AEGIS" />
+<style>
+  :root{
+    --bg:#070405; --bg2:#120607; --ink:#f4eaea; --muted:#8f7d80;
+    --accent:#ff2a36; --accent-dim:#8f0c14; --amber:#ff5c5c;
+    --green:#36d399; --radius:16px;
+    --font:'Segoe UI',system-ui,-apple-system,Roboto,Helvetica,Arial,sans-serif;
+    --mono:'SFMono-Regular',ui-monospace,Menlo,Consolas,monospace;
+    --safe-top:env(safe-area-inset-top); --safe-bot:env(safe-area-inset-bottom);
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  html,body{height:100%}
+  body{
+    font-family:var(--font); color:var(--ink);
+    background:radial-gradient(120% 120% at 50% -10%, #2a070a 0%, var(--bg2) 38%, var(--bg) 100%);
+    -webkit-font-smoothing:antialiased; overflow:hidden; overscroll-behavior:none;
+    padding-top:var(--safe-top); padding-bottom:var(--safe-bot);
+  }
+  .screen{position:fixed; inset:var(--safe-top) 0 var(--safe-bot) 0; padding:18px 20px;
+    display:none; flex-direction:column; overflow-y:auto; -webkit-overflow-scrolling:touch}
+  .screen.active{display:flex}
+  .head{display:flex; align-items:center; justify-content:space-between; margin-bottom:18px; min-height:36px}
+  .head h2{font-size:18px; font-weight:600; letter-spacing:.02em}
+  .head .back{font-size:22px; color:var(--muted); padding:6px 10px; margin-left:-10px; cursor:pointer}
+  .eyebrow{font-family:var(--mono); font-size:11px; letter-spacing:.32em; color:var(--accent); text-transform:uppercase}
+  h1{font-size:30px; font-weight:700; letter-spacing:-.4px; line-height:1.1}
+  p.lead{color:var(--muted); font-size:15px; line-height:1.5; margin-top:10px}
+  .input{width:100%; padding:15px 16px; background:rgba(255,255,255,.04); color:var(--ink);
+    border:1px solid rgba(255,42,54,.3); border-radius:12px; font-size:16px; font-family:var(--font); outline:none}
+  .input:focus{border-color:var(--accent); box-shadow:0 0 0 3px rgba(255,42,54,.18)}
+  .input::placeholder{color:var(--muted)}
+  .btn{appearance:none; border:none; cursor:pointer; width:100%; padding:16px 20px; border-radius:14px;
+    font-family:var(--font); font-size:16px; font-weight:600;
+    background:linear-gradient(180deg,var(--accent),var(--accent-dim)); color:#1a0203;
+    box-shadow:0 10px 30px -10px rgba(255,42,54,.6); transition:transform .12s, filter .15s}
+  .btn:active{transform:scale(.98); filter:brightness(.95)}
+  .btn.ghost{background:transparent; color:var(--ink); border:1px solid rgba(255,255,255,.12); box-shadow:none; font-weight:500}
+  .btn.green{background:linear-gradient(180deg,#48e6ab,#1f9e74); color:#04261c; box-shadow:0 10px 30px -10px rgba(54,211,153,.5)}
+  .btn.dark{background:#1a0608; color:var(--ink); border:1px solid rgba(255,42,54,.3); box-shadow:none}
+  .row{display:flex; gap:10px}
+  .row .btn{flex:1}
+  .stack{display:flex; flex-direction:column; gap:12px}
+  .card{background:linear-gradient(180deg,#0c131b,#080d13); border:1px solid rgba(255,255,255,.07);
+    border-radius:14px; padding:16px}
+  .pill{display:inline-block; padding:4px 10px; border-radius:99px; background:rgba(255,42,54,.1);
+    color:var(--accent); font-size:11px; font-family:var(--mono); letter-spacing:.1em; text-transform:uppercase}
+
+  /* ---------- HOME ---------- */
+  #home{justify-content:space-between}
+  #home .head{margin-bottom:0}
+  #home .hi{display:flex; flex-direction:column; gap:2px}
+  #home .hi .name{font-size:20px; font-weight:600}
+  #home .hi .status{font-size:12px; color:var(--muted)}
+  #home .gear{font-size:22px; padding:8px; cursor:pointer; color:var(--muted)}
+  .sos-wrap{flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:18px; padding:20px 0}
+  .sos-btn{
+    width:240px; height:240px; max-width:70vw; max-height:70vw;
+    border-radius:50%; border:none; cursor:pointer; color:#1a0203; font-weight:800;
+    font-size:36px; letter-spacing:.06em; font-family:var(--font);
+    background:radial-gradient(circle at 50% 35%, #ff5c66, var(--accent) 55%, var(--accent-dim) 100%);
+    box-shadow:0 0 0 8px rgba(255,42,54,.15), 0 0 60px -10px var(--accent), inset 0 -8px 30px rgba(0,0,0,.3);
+    animation:sosPulse 2.2s ease-in-out infinite;
+  }
+  .sos-btn:active{animation:none; transform:scale(.97)}
+  @keyframes sosPulse{
+    0%,100%{box-shadow:0 0 0 8px rgba(255,42,54,.15), 0 0 60px -10px var(--accent), inset 0 -8px 30px rgba(0,0,0,.3)}
+    50%{box-shadow:0 0 0 16px rgba(255,42,54,.08), 0 0 90px -10px var(--accent), inset 0 -8px 30px rgba(0,0,0,.3)}
+  }
+  .sos-hint{font-family:var(--mono); font-size:11px; color:var(--muted); letter-spacing:.18em; text-transform:uppercase; text-align:center}
+  .home-row{display:flex; gap:10px; margin-top:auto}
+  .home-row .btn{flex:1}
+  .nav{display:flex; gap:8px; padding-top:14px; border-top:1px solid rgba(255,255,255,.06); margin-top:14px}
+  .nav .nbtn{flex:1; padding:10px 6px; text-align:center; color:var(--muted); font-size:11px; cursor:pointer; border-radius:10px}
+  .nav .nbtn.on{color:var(--accent); background:rgba(255,42,54,.06)}
+  .nav .nbtn .ic{font-size:22px; display:block; margin-bottom:2px}
+
+  /* ---------- SOS COUNTDOWN ---------- */
+  #sosCount{background:radial-gradient(circle at 50% 30%, #3a0810, #0a0203 70%); align-items:center; justify-content:center}
+  #sosCount .big{font-size:140px; font-weight:800; color:var(--accent); text-shadow:0 0 50px rgba(255,42,54,.5); font-family:var(--mono); animation:cdpulse 1s ease-in-out infinite}
+  @keyframes cdpulse{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}
+  #sosCount .lbl{margin-top:10px; font-family:var(--mono); font-size:12px; letter-spacing:.3em; color:var(--accent); text-transform:uppercase}
+  #sosCount .lead{margin-top:18px; text-align:center; max-width:360px}
+  #sosCount .cancel{margin-top:auto; margin-bottom:30px; padding:18px 36px; border-radius:14px;
+    background:#1a0608; border:1px solid rgba(255,255,255,.15); color:var(--ink); font-size:17px; font-weight:600; cursor:pointer}
+
+  /* ---------- SOS ACTIVE ---------- */
+  #sosActive .eyebrow{color:var(--accent); animation:flicker 2s infinite}
+  @keyframes flicker{0%,100%{opacity:1}95%{opacity:.5}}
+  .contact-send{display:flex; align-items:center; gap:12px; padding:14px; background:#0c131b;
+    border:1px solid rgba(255,42,54,.2); border-radius:12px; margin-bottom:10px}
+  .contact-send .avatar{width:44px; height:44px; border-radius:50%; background:rgba(255,42,54,.15);
+    color:var(--accent); display:flex; align-items:center; justify-content:center; font-weight:700; font-size:17px; flex-shrink:0}
+  .contact-send .info{flex:1; min-width:0}
+  .contact-send .info .n{font-weight:600; font-size:15px}
+  .contact-send .info .p{font-size:12px; color:var(--muted); font-family:var(--mono)}
+  .contact-send .send{appearance:none; border:none; padding:10px 14px; border-radius:10px; font-weight:700; font-size:13px;
+    background:linear-gradient(180deg,#48e6ab,#1f9e74); color:#04261c; cursor:pointer; flex-shrink:0}
+  .contact-send.sent .send{background:#1a2a2a; color:#7da89d}
+  .protocol{background:rgba(255,42,54,.08); border:1px solid rgba(255,42,54,.3); border-radius:12px; padding:14px 16px; margin-top:14px}
+  .protocol h4{font-size:14px; font-weight:700; color:var(--accent); margin-bottom:8px; letter-spacing:.04em; text-transform:uppercase}
+  .protocol p{font-size:15px; line-height:1.55; color:var(--ink)}
+  .type-grid{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:14px}
+  .type-grid button{padding:14px 10px; background:#0c131b; border:1px solid rgba(255,42,54,.25); color:var(--ink); border-radius:12px; font-size:14px; cursor:pointer; text-align:left}
+  .type-grid button .em{display:block; font-size:24px; margin-bottom:6px}
+
+  /* ---------- ACOMPÁÑAME ---------- */
+  .quick-grid{display:grid; grid-template-columns:1fr 1fr; gap:10px}
+  .quick-grid button{padding:14px; background:#0c131b; border:1px solid rgba(255,255,255,.08); color:var(--ink); border-radius:12px; font-size:14px; cursor:pointer; text-align:left}
+  .quick-grid button.on{border-color:var(--accent); background:rgba(255,42,54,.08)}
+  .timer-ring{width:200px; height:200px; margin:20px auto; position:relative}
+  .timer-ring svg{transform:rotate(-90deg)}
+  .timer-ring .time{position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center}
+  .timer-ring .time .t{font-family:var(--mono); font-size:36px; font-weight:700; color:var(--accent)}
+  .timer-ring .time .lbl{font-size:10px; letter-spacing:.2em; color:var(--muted); text-transform:uppercase; font-family:var(--mono)}
+
+  /* ---------- CONTACTOS ---------- */
+  .contact-row{display:flex; align-items:center; gap:12px; padding:12px; background:#0c131b; border-radius:12px; margin-bottom:8px}
+  .contact-row .info{flex:1; min-width:0}
+  .contact-row .info .n{font-weight:600; font-size:15px}
+  .contact-row .info .p{font-size:12px; color:var(--muted); font-family:var(--mono)}
+  .contact-row .del{appearance:none; border:none; background:transparent; color:var(--muted); font-size:18px; padding:6px 10px; cursor:pointer}
+
+  /* ---------- ASESORÍA ---------- */
+  .asesor-card{padding:16px; background:#0c131b; border:1px solid rgba(255,255,255,.07); border-radius:12px; margin-bottom:10px; cursor:pointer}
+  .asesor-card h3{font-size:16px; font-weight:600; margin-bottom:4px}
+  .asesor-card p{font-size:13px; color:var(--muted)}
+  .asesor-detail{padding:16px; background:#0c131b; border-radius:12px; margin-top:12px}
+  .asesor-detail ol{padding-left:22px; margin-top:8px}
+  .asesor-detail li{font-size:14px; line-height:1.6; margin-bottom:6px}
+
+  /* ---------- COUNTRY ---------- */
+  .phone-row{display:flex; gap:8px}
+  .phone-row select{width:90px; padding:15px 8px; background:rgba(255,255,255,.04); color:var(--ink); border:1px solid rgba(255,42,54,.3); border-radius:12px; font-size:15px; font-family:var(--font)}
+  .phone-row .input{flex:1}
+
+  .footer-note{font-size:11px; color:var(--muted); text-align:center; padding:14px 16px 0}
+  .install-hint{position:fixed; bottom:60px; left:50%; transform:translateX(-50%); padding:10px 16px; background:#0c131b; border:1px solid rgba(255,42,54,.3); border-radius:99px; font-size:12px; color:var(--muted); z-index:10; display:none}
+</style>
+</head>
+<body>
+
+<!-- ========== ONBOARDING ========== -->
+<section class="screen" id="onb-welcome">
+  <div style="margin-top:auto; margin-bottom:auto; text-align:center">
+    <div class="eyebrow" style="margin-bottom:14px">AEGIS · Tu red de protección</div>
+    <h1>No estás solo.</h1>
+    <p class="lead" style="margin:14px auto">Tu botón de pánico, tu círculo de confianza y la asesoría de AEGIS en una sola app. Hecha en México.</p>
+  </div>
+  <button class="btn" id="onbStart">Comenzar</button>
+</section>
+
+<section class="screen" id="onb-name">
+  <div class="head"><div></div></div>
+  <div class="eyebrow">Paso 1 de 2</div>
+  <h1 style="margin-top:8px">¿Cómo te llamas?</h1>
+  <p class="lead">Solo lo usaremos para personalizar tu experiencia y los mensajes a tu círculo.</p>
+  <div style="margin-top:24px"><input class="input" id="nameInput" type="text" placeholder="Tu nombre" maxlength="24" autocomplete="given-name" /></div>
+  <div style="margin-top:auto"><button class="btn" id="onbNameNext" disabled style="opacity:.5">Continuar →</button></div>
+</section>
+
+<section class="screen" id="onb-contacts">
+  <div class="head"><div class="back" data-go="onb-name">←</div></div>
+  <div class="eyebrow">Paso 2 de 2</div>
+  <h1 style="margin-top:8px">Tu círculo de confianza</h1>
+  <p class="lead">Agrega <b>al menos 2</b> personas a las que AEGIS avisará por WhatsApp en una emergencia. Familia, pareja, amistades cercanas.</p>
+  <div id="onbContactList" style="margin-top:18px"></div>
+  <button class="btn ghost" id="onbAddContact" style="margin-top:10px">＋ Agregar contacto</button>
+  <div style="margin-top:auto"><button class="btn" id="onbFinish" disabled style="opacity:.5">Activar AEGIS</button></div>
+</section>
+
+<!-- ========== HOME ========== -->
+<section class="screen" id="home">
+  <div class="head">
+    <div class="hi"><div class="name" id="homeName">Hola</div><div class="status" id="homeStatus">Tu red está lista</div></div>
+    <div class="gear" data-go="ajustes">⚙</div>
+  </div>
+  <div class="sos-wrap">
+    <button class="sos-btn" id="sosBtn">SOS</button>
+    <div class="sos-hint">Mantén presionado o toca para activar</div>
+  </div>
+  <div class="home-row">
+    <button class="btn dark" id="acompBtn">🚶 Acompáñame</button>
+  </div>
+  <div class="nav">
+    <div class="nbtn on"><span class="ic">🛡</span>Inicio</div>
+    <div class="nbtn" data-go="circulo"><span class="ic">👥</span>Círculo</div>
+    <div class="nbtn" data-go="asesoria"><span class="ic">📚</span>Asesoría</div>
+    <div class="nbtn" data-go="ajustes"><span class="ic">⚙</span>Ajustes</div>
+  </div>
+</section>
+
+<!-- ========== SOS COUNTDOWN ========== -->
+<section class="screen" id="sosCount">
+  <div class="lbl">Activando SOS en</div>
+  <div class="big" id="cdNum">3</div>
+  <p class="lead" style="color:var(--ink)">Voy a avisarle a tu círculo y a quedarme contigo.</p>
+  <button class="cancel" id="cancelSos">Cancelar</button>
+</section>
+
+<!-- ========== SOS ACTIVE ========== -->
+<section class="screen" id="sosActive">
+  <div class="eyebrow">● SOS activo · AEGIS contigo</div>
+  <h1 style="margin-top:8px;font-size:24px" id="sosTitle">Tu círculo ya sabe</h1>
+  <p class="lead" id="sosSub">Tu ubicación está lista. Toca <b>Enviar</b> a cada contacto.</p>
+  <div id="sosContactList" style="margin-top:16px"></div>
+  <div id="sosTypeWrap">
+    <div class="eyebrow" style="margin-top:18px">¿Qué está pasando?</div>
+    <div class="type-grid" id="sosTypes">
+      <button data-t="siguen"><span class="em">👁</span>Me siguen</button>
+      <button data-t="asalto"><span class="em">💰</span>Asalto</button>
+      <button data-t="accidente"><span class="em">🚗</span>Accidente</button>
+      <button data-t="agresion"><span class="em">⚠️</span>Agresión</button>
+      <button data-t="acoso"><span class="em">🚷</span>Acoso / Persecución</button>
+      <button data-t="otro"><span class="em">❓</span>Otra cosa</button>
+    </div>
+  </div>
+  <div id="sosProtocol" class="protocol" style="display:none">
+    <h4 id="sosProtoTitle">Protocolo</h4>
+    <p id="sosProtoText"></p>
+  </div>
+  <div class="row" style="margin-top:18px">
+    <a class="btn dark" href="tel:911" style="flex:1; text-align:center; text-decoration:none; padding:16px 0">📞 Llamar 911</a>
+    <button class="btn green" id="sosSafe">Estoy a salvo</button>
+  </div>
+  <div class="footer-note">AEGIS te acompaña; no sustituye a los servicios de emergencia oficiales.</div>
+</section>
+
+<!-- ========== ACOMPÁÑAME · SETUP ========== -->
+<section class="screen" id="acompSetup">
+  <div class="head"><div class="back" data-go="home">←</div><h2>Acompáñame</h2><div></div></div>
+  <p class="lead">Sales sola/o. Si no marcas que llegaste, AEGIS avisa a tu contacto.</p>
+
+  <div class="eyebrow" style="margin-top:20px">¿A dónde vas?</div>
+  <div class="quick-grid" style="margin-top:8px" id="destQuick">
+    <button data-d="Casa">🏠 Casa</button>
+    <button data-d="Trabajo">💼 Trabajo</button>
+    <button data-d="Escuela">🎓 Escuela</button>
+    <button data-d="Otro lugar">📍 Otro</button>
+  </div>
+  <input class="input" id="destCustom" type="text" placeholder="O escribe el destino…" style="margin-top:10px" />
+
+  <div class="eyebrow" style="margin-top:20px">¿En cuánto tiempo llegas?</div>
+  <div class="quick-grid" style="margin-top:8px" id="durQuick">
+    <button data-m="15">15 min</button>
+    <button data-m="30">30 min</button>
+    <button data-m="45">45 min</button>
+    <button data-m="60">1 hora</button>
+    <button data-m="90">1h 30</button>
+    <button data-m="120">2 horas</button>
+  </div>
+
+  <div class="eyebrow" style="margin-top:20px">¿A quién avisamos?</div>
+  <div id="acompContactPick" style="margin-top:8px"></div>
+
+  <div style="margin-top:20px"><button class="btn" id="acompStart" disabled style="opacity:.5">Empezar acompañamiento</button></div>
+</section>
+
+<!-- ========== ACOMPÁÑAME · ACTIVO ========== -->
+<section class="screen" id="acompActive">
+  <div class="eyebrow">● Acompañamiento activo</div>
+  <h1 style="margin-top:8px;font-size:22px" id="acompDest">Hacia…</h1>
+  <div class="timer-ring">
+    <svg viewBox="0 0 200 200" width="200" height="200">
+      <circle cx="100" cy="100" r="90" fill="none" stroke="rgba(255,42,54,.1)" stroke-width="10"/>
+      <circle id="acompRing" cx="100" cy="100" r="90" fill="none" stroke="var(--accent)" stroke-width="10"
+        stroke-linecap="round" stroke-dasharray="565.5" stroke-dashoffset="0"/>
+    </svg>
+    <div class="time"><div class="t" id="acompTime">00:00</div><div class="lbl">tiempo restante</div></div>
+  </div>
+  <p class="lead" style="text-align:center" id="acompWho">Le avisaremos a tu contacto si no marcas que llegaste.</p>
+  <div class="stack" style="margin-top:auto">
+    <button class="btn green" id="acompArrived">✓ Estoy bien, ya llegué</button>
+    <button class="btn dark" id="acompExtend">＋ Necesito 15 minutos más</button>
+    <button class="btn ghost" id="acompCancel">Cancelar acompañamiento</button>
+  </div>
+</section>
+
+<!-- ========== CÍRCULO ========== -->
+<section class="screen" id="circulo">
+  <div class="head"><div class="back" data-go="home">←</div><h2>Tu círculo de confianza</h2><div></div></div>
+  <p class="lead">Personas a las que AEGIS avisa por WhatsApp en una emergencia.</p>
+  <div id="circList" style="margin-top:18px"></div>
+  <button class="btn ghost" id="circAdd" style="margin-top:10px">＋ Agregar contacto</button>
+</section>
+
+<!-- ========== ASESORÍA ========== -->
+<section class="screen" id="asesoria">
+  <div class="head"><div class="back" data-go="home">←</div><h2>Asesoría AEGIS</h2><div></div></div>
+  <p class="lead">Protocolos rápidos para situaciones comunes. Léelos antes de que pase algo.</p>
+  <div id="asesorList" style="margin-top:18px"></div>
+  <div id="asesorDetail" class="asesor-detail" style="display:none"></div>
+</section>
+
+<!-- ========== AJUSTES ========== -->
+<section class="screen" id="ajustes">
+  <div class="head"><div class="back" data-go="home">←</div><h2>Ajustes</h2><div></div></div>
+  <div class="card" style="margin-top:10px">
+    <div class="eyebrow">Tu nombre</div>
+    <input class="input" id="setName" type="text" maxlength="24" style="margin-top:8px" />
+  </div>
+  <div class="card" style="margin-top:10px">
+    <div class="eyebrow">Voz de AEGIS</div>
+    <label style="display:flex;align-items:center;gap:10px;margin-top:8px;font-size:14px">
+      <input type="checkbox" id="setVoice" /> Activar voz en emergencias y acompañamiento
+    </label>
+  </div>
+  <button class="btn dark" data-go="circulo" style="margin-top:14px">Gestionar círculo de confianza</button>
+  <button class="btn ghost" id="setReset" style="margin-top:14px">Restablecer AEGIS (borrar todo)</button>
+  <div class="footer-note">AEGIS guarda tu información solo en este dispositivo. No es servicio oficial de emergencias.</div>
+</section>
+
+<!-- ========== MODAL: AGREGAR CONTACTO ========== -->
+<section class="screen" id="addContact">
+  <div class="head"><div class="back" id="addBack">←</div><h2>Nuevo contacto</h2><div></div></div>
+  <p class="lead">Persona de tu confianza. Debe tener WhatsApp activo.</p>
+  <div style="margin-top:16px"><input class="input" id="cNameInput" type="text" placeholder="Nombre" maxlength="32" /></div>
+  <div style="margin-top:10px" class="phone-row">
+    <select id="cCC">
+      <option value="52" selected>🇲🇽 +52</option>
+      <option value="1">🇺🇸 +1</option>
+      <option value="34">🇪🇸 +34</option>
+      <option value="54">🇦🇷 +54</option>
+      <option value="56">🇨🇱 +56</option>
+      <option value="57">🇨🇴 +57</option>
+      <option value="58">🇻🇪 +58</option>
+      <option value="51">🇵🇪 +51</option>
+    </select>
+    <input class="input" id="cPhone" type="tel" inputmode="numeric" placeholder="Número (10 dígitos)" maxlength="14" />
+  </div>
+  <div style="margin-top:auto"><button class="btn" id="cSave" disabled style="opacity:.5">Guardar contacto</button></div>
+</section>
+
+<script>
+(function(){
+"use strict";
+
+/* ===================== ESTADO ===================== */
+var LS={
+  user:'aegis.user', contacts:'aegis.contacts', voice:'aegis.voice',
+  acomp:'aegis.acomp', sosLog:'aegis.sosLog'
+};
+function load(k,d){ try{ var v=localStorage.getItem(k); return v?JSON.parse(v):d; }catch(e){ return d; } }
+function save(k,v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} }
+var user=load(LS.user,null);
+var contacts=load(LS.contacts,[]);
+var voiceOn = load(LS.voice, true);
+var acomp = load(LS.acomp, null);
+
+/* ===================== ROUTING ===================== */
+function $(s){ return document.querySelector(s); }
+function $$(s){ return Array.prototype.slice.call(document.querySelectorAll(s)); }
+function show(id){
+  $$('.screen').forEach(function(s){ s.classList.remove('active'); });
+  var el=document.getElementById(id); if(el) el.classList.add('active');
+  window.scrollTo(0,0);
+}
+document.addEventListener('click', function(e){
+  var t=e.target.closest('[data-go]'); if(t){ show(t.getAttribute('data-go')); }
+});
+
+/* ===================== ONBOARDING ===================== */
+function decideStart(){
+  if(!user || !user.name) { show('onb-welcome'); }
+  else if(!contacts || contacts.length<1){ show('onb-contacts'); renderOnbContacts(); }
+  else { enterHome(); }
+}
+
+$('#onbStart').addEventListener('click', function(){ show('onb-name'); setTimeout(function(){ $('#nameInput').focus(); },200); });
+$('#nameInput').addEventListener('input', function(e){
+  var v=(e.target.value||'').trim();
+  var b=$('#onbNameNext'); b.disabled=v.length<2; b.style.opacity=v.length<2?'.5':'1';
+});
+$('#onbNameNext').addEventListener('click', function(){
+  var v=($('#nameInput').value||'').trim().replace(/[<>]/g,'').slice(0,24);
+  if(v.length<2) return;
+  user={name:v}; save(LS.user, user);
+  show('onb-contacts'); renderOnbContacts();
+});
+
+function renderOnbContacts(){
+  var list=$('#onbContactList'); list.innerHTML='';
+  if(!contacts.length){ list.innerHTML='<p style="color:var(--muted);font-size:13px">Aún no hay nadie en tu círculo.</p>'; }
+  contacts.forEach(function(c){
+    var row=document.createElement('div'); row.className='contact-row';
+    row.innerHTML='<div class="avatar" style="width:36px;height:36px;background:rgba(255,42,54,.15);color:var(--accent);border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700">'+initials(c.name)+'</div>'+
+      '<div class="info"><div class="n">'+escapeHtml(c.name)+'</div><div class="p">+'+c.phone+'</div></div>'+
+      '<button class="del" data-id="'+c.id+'">✕</button>';
+    list.appendChild(row);
+  });
+  list.querySelectorAll('.del').forEach(function(b){
+    b.addEventListener('click', function(){
+      var id=b.getAttribute('data-id');
+      contacts=contacts.filter(function(x){ return x.id!==id; });
+      save(LS.contacts, contacts); renderOnbContacts(); updateOnbFinish();
+    });
+  });
+  updateOnbFinish();
+}
+function updateOnbFinish(){
+  var b=$('#onbFinish'); var ok=contacts.length>=2;
+  b.disabled=!ok; b.style.opacity=ok?'1':'.5';
+}
+$('#onbAddContact').addEventListener('click', function(){ openAddContact('onb-contacts'); });
+$('#onbFinish').addEventListener('click', function(){ enterHome(); });
+
+function enterHome(){
+  $('#homeName').textContent='Hola, '+user.name;
+  $('#homeStatus').textContent= contacts.length+' '+(contacts.length===1?'contacto':'contactos')+' en tu círculo';
+  show('home');
+  // Pre-cargar voces TTS
+  if('speechSynthesis' in window) window.speechSynthesis.getVoices();
+}
+
+/* ===================== AGREGAR CONTACTO (modal) ===================== */
+var addReturnTo='circulo';
+function openAddContact(returnTo){
+  addReturnTo=returnTo||'circulo';
+  $('#cNameInput').value=''; $('#cPhone').value=''; $('#cCC').value='52';
+  $('#cSave').disabled=true; $('#cSave').style.opacity='.5';
+  show('addContact'); setTimeout(function(){ $('#cNameInput').focus(); }, 200);
+}
+$('#addBack').addEventListener('click', function(){ show(addReturnTo); if(addReturnTo==='onb-contacts') renderOnbContacts(); if(addReturnTo==='circulo') renderCirculo(); });
+function checkContactForm(){
+  var n=($('#cNameInput').value||'').trim();
+  var p=($('#cPhone').value||'').replace(/\D/g,'');
+  var ok=n.length>=2 && p.length>=8;
+  $('#cSave').disabled=!ok; $('#cSave').style.opacity=ok?'1':'.5';
+}
+$('#cNameInput').addEventListener('input', checkContactForm);
+$('#cPhone').addEventListener('input', checkContactForm);
+$('#cSave').addEventListener('click', function(){
+  var n=($('#cNameInput').value||'').trim().slice(0,32);
+  var cc=$('#cCC').value;
+  var p=($('#cPhone').value||'').replace(/\D/g,'');
+  if(n.length<2 || p.length<8) return;
+  contacts.push({id:'c'+Date.now()+Math.floor(Math.random()*999), name:n, phone:cc+p});
+  save(LS.contacts, contacts);
+  show(addReturnTo);
+  if(addReturnTo==='onb-contacts') renderOnbContacts();
+  if(addReturnTo==='circulo') renderCirculo();
+});
+
+/* ===================== UTIL ===================== */
+function escapeHtml(s){ return (s||'').replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+function initials(name){ var p=(name||'').trim().split(/\s+/); return ((p[0]||'?')[0]||'?').toUpperCase()+((p[1]||'')[0]||'').toUpperCase(); }
+function pad(n){ return n<10?('0'+n):(''+n); }
+function fmtMS(s){ var m=Math.max(0,Math.floor(s/60)), x=Math.max(0,s%60); return pad(m)+':'+pad(x); }
+function vibrate(p){ if(navigator.vibrate){ try{ navigator.vibrate(p); }catch(e){} } }
+
+/* ===================== VOZ AEGIS ===================== */
+var selectedVoice=null;
+var FEMALE_VOICE=/paulina|m[óo]nica|marisol|ang[ée]lica|soledad|esperanza|sabina|helena|laura|elena|google espa|female|mujer|femenin/i;
+function getVoice(){
+  if(selectedVoice) return selectedVoice;
+  if(!('speechSynthesis' in window)) return null;
+  var vs=window.speechSynthesis.getVoices().filter(function(v){ return /^es/i.test(v.lang); });
+  if(!vs.length) return null;
+  var f=vs.find(function(v){ return FEMALE_VOICE.test(v.name) && /es(-|_)(419|US|MX|CO|AR|CL|PE)/i.test(v.lang); });
+  if(f){ selectedVoice=f; return f; }
+  f=vs.find(function(v){ return FEMALE_VOICE.test(v.name); });
+  if(f){ selectedVoice=f; return f; }
+  selectedVoice=vs[0]; return selectedVoice;
+}
+function speak(text){
+  if(!voiceOn) return;
+  if(!('speechSynthesis' in window)) return;
+  try{
+    window.speechSynthesis.cancel();
+    try{ window.speechSynthesis.resume(); }catch(e){}
+    var u=new SpeechSynthesisUtterance(text);
+    var v=getVoice();
+    if(v){ u.voice=v; u.lang=v.lang; } else { u.lang='es-MX'; }
+    u.rate=0.97; u.pitch=0.95; u.volume=1;
+    window.speechSynthesis.speak(u);
+  }catch(e){}
+}
+function stopSpeak(){ try{ if('speechSynthesis' in window) window.speechSynthesis.cancel(); }catch(e){} }
+
+/* ===================== HOME · SOS ===================== */
+$('#sosBtn').addEventListener('click', function(){
+  if(contacts.length<1){ alert('Primero agrega al menos un contacto en tu círculo.'); show('circulo'); renderCirculo(); return; }
+  startSosCountdown();
+});
+
+var cdInterval=null, cdLeft=3;
+function startSosCountdown(){
+  cdLeft=3; $('#cdNum').textContent=cdLeft;
+  show('sosCount'); vibrate(80);
+  // PRIMA la voz dentro del gesto (necesario en iOS)
+  if(voiceOn) speak('Activando SOS. Estoy contigo.');
+  cdInterval=setInterval(function(){
+    cdLeft--;
+    if(cdLeft<=0){ clearInterval(cdInterval); cdInterval=null; activateSos(); return; }
+    $('#cdNum').textContent=cdLeft; vibrate(60);
+  }, 1000);
+}
+$('#cancelSos').addEventListener('click', function(){
+  if(cdInterval){ clearInterval(cdInterval); cdInterval=null; }
+  stopSpeak(); show('home');
+});
+
+var sosLocation=null;
+function activateSos(){
+  show('sosActive');
+  vibrate([100,80,100,80,200]);
+  $('#sosTypeWrap').style.display='block';
+  $('#sosProtocol').style.display='none';
+
+  if(navigator.geolocation){
+    navigator.geolocation.getCurrentPosition(function(pos){
+      sosLocation={ lat:pos.coords.latitude, lng:pos.coords.longitude, accuracy:Math.round(pos.coords.accuracy||0) };
+      renderSosContacts();
+    }, function(err){
+      sosLocation=null;
+      renderSosContacts();
+    }, {enableHighAccuracy:true, timeout:8000, maximumAge:0});
+  } else {
+    renderSosContacts();
+  }
+
+  setTimeout(function(){
+    speak('Tu círculo ya sabe. Toca enviar a cada contacto. Cuéntame qué está pasando.');
+  }, 400);
+}
+
+function renderSosContacts(){
+  var list=$('#sosContactList'); list.innerHTML='';
+  var loc = sosLocation;
+  var locTxt = loc ? ('https://maps.google.com/?q='+loc.lat+','+loc.lng) : '(ubicación no disponible)';
+  contacts.forEach(function(c){
+    var row=document.createElement('div'); row.className='contact-send'; row.dataset.id=c.id;
+    row.innerHTML='<div class="avatar">'+initials(c.name)+'</div>'+
+      '<div class="info"><div class="n">'+escapeHtml(c.name)+'</div><div class="p">+'+c.phone+'</div></div>'+
+      '<button class="send">Enviar</button>';
+    row.querySelector('.send').addEventListener('click', function(){
+      var msg='🚨 EMERGENCIA · '+user.name+' necesita ayuda.';
+      if(loc){ msg+='\n\n📍 Ubicación: '+locTxt+'\n(precisión ~'+loc.accuracy+'m)'; }
+      else { msg+='\n\n(No pude obtener ubicación. Llámale ya.)'; }
+      msg+='\n\nEste aviso lo envió AEGIS.';
+      var url='https://wa.me/'+c.phone+'?text='+encodeURIComponent(msg);
+      row.classList.add('sent');
+      row.querySelector('.send').textContent='✓ Enviado';
+      window.open(url, '_blank');
+    });
+    list.appendChild(row);
+  });
+}
+
+var PROTOCOLS={
+  siguen:{ titulo:'Si te siguen', texto:'No corras. Busca un lugar con gente: una tienda, un banco, un local con luz. Cambia de calle. Llama por teléfono y habla en voz alta. Si puedes, fotografía discretamente. Tus contactos ya van por ti.' },
+  asalto:{ titulo:'Si te asaltan', texto:'No te resistas si solo quieren cosas. Tu vida vale más. Entrega lo que pidan sin gestos bruscos. Memoriza señas: ropa, cara, voz, vehículo. Cuando se vayan, busca refugio y llama al 911. Tus contactos están avisados.' },
+  accidente:{ titulo:'Si hay un accidente', texto:'Si puedes moverte, ponte fuera de peligro. Verifica si hay heridos. Llama al 911 ya. No muevas a un lesionado a menos que haya fuego o más peligro. Mantén las luces intermitentes si vas en auto.' },
+  agresion:{ titulo:'Si te agreden', texto:'Si puedes alejarte, hazlo: corre hacia donde haya gente y grita AUXILIO fuerte y claro. Si no puedes huir, protege cabeza y cuello. Tus contactos están avisados. Llama al 911 en cuanto puedas.' },
+  acoso:{ titulo:'Acoso o persecución', texto:'No regreses a tu casa directo: que no sepan dónde vives. Métete a un lugar con cámaras y testigos. Filma o fotografía si es seguro. Reporta al 911 y guarda evidencia. Tus contactos están contigo.' },
+  otro:{ titulo:'Estoy aquí contigo', texto:'Tus contactos ya saben dónde estás. Respira. Cuéntales por WhatsApp qué necesitas. Si hay peligro inmediato, llama al 911. Yo me quedo contigo.' }
+};
+$$('#sosTypes button').forEach(function(b){
+  b.addEventListener('click', function(){
+    var t=b.getAttribute('data-t'); var p=PROTOCOLS[t]; if(!p) return;
+    $('#sosTypeWrap').style.display='none';
+    $('#sosProtoTitle').textContent=p.titulo;
+    $('#sosProtoText').textContent=p.texto;
+    $('#sosProtocol').style.display='block';
+    speak(p.texto);
+  });
+});
+$('#sosSafe').addEventListener('click', function(){
+  stopSpeak();
+  if(confirm('¿Marcar que ya estás a salvo? Esto solo cierra la pantalla; si quieres avisarle a tu círculo manda un WhatsApp.')){
+    show('home');
+  }
+});
+
+/* ===================== ACOMPÁÑAME ===================== */
+var acompDraft={ dest:null, mins:null, contactId:null };
+$('#acompBtn').addEventListener('click', function(){
+  if(contacts.length<1){ alert('Primero agrega un contacto en tu círculo.'); show('circulo'); renderCirculo(); return; }
+  if(acomp && acomp.active){ resumeAcompActive(); return; }
+  acompDraft={dest:null, mins:null, contactId:null};
+  $$('#destQuick button').forEach(function(b){ b.classList.remove('on'); });
+  $$('#durQuick button').forEach(function(b){ b.classList.remove('on'); });
+  $('#destCustom').value='';
+  renderAcompContactPick();
+  refreshAcompStart();
+  show('acompSetup');
+});
+
+$$('#destQuick button').forEach(function(b){
+  b.addEventListener('click', function(){
+    $$('#destQuick button').forEach(function(x){ x.classList.remove('on'); });
+    b.classList.add('on');
+    acompDraft.dest=b.getAttribute('data-d');
+    $('#destCustom').value='';
+    refreshAcompStart();
+  });
+});
+$('#destCustom').addEventListener('input', function(e){
+  var v=(e.target.value||'').trim();
+  if(v){ $$('#destQuick button').forEach(function(x){ x.classList.remove('on'); }); acompDraft.dest=v; }
+  else { acompDraft.dest=null; }
+  refreshAcompStart();
+});
+$$('#durQuick button').forEach(function(b){
+  b.addEventListener('click', function(){
+    $$('#durQuick button').forEach(function(x){ x.classList.remove('on'); });
+    b.classList.add('on');
+    acompDraft.mins=parseInt(b.getAttribute('data-m'),10);
+    refreshAcompStart();
+  });
+});
+function renderAcompContactPick(){
+  var box=$('#acompContactPick'); box.innerHTML='';
+  contacts.forEach(function(c){
+    var row=document.createElement('div'); row.className='contact-row'; row.style.cursor='pointer';
+    row.innerHTML='<div style="width:36px;height:36px;background:rgba(255,42,54,.15);color:var(--accent);border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700">'+initials(c.name)+'</div>'+
+      '<div class="info"><div class="n">'+escapeHtml(c.name)+'</div><div class="p">+'+c.phone+'</div></div>'+
+      '<div style="width:22px;height:22px;border-radius:50%;border:2px solid var(--muted);flex-shrink:0" class="pickdot"></div>';
+    row.addEventListener('click', function(){
+      acompDraft.contactId=c.id;
+      box.querySelectorAll('.pickdot').forEach(function(d){ d.style.background='transparent'; d.style.borderColor='var(--muted)'; });
+      var dot=row.querySelector('.pickdot'); dot.style.background='var(--accent)'; dot.style.borderColor='var(--accent)';
+      refreshAcompStart();
+    });
+    box.appendChild(row);
+  });
+}
+function refreshAcompStart(){
+  var ok=acompDraft.dest && acompDraft.mins && acompDraft.contactId;
+  $('#acompStart').disabled=!ok; $('#acompStart').style.opacity=ok?'1':'.5';
+}
+$('#acompStart').addEventListener('click', function(){
+  if(!acompDraft.dest || !acompDraft.mins || !acompDraft.contactId) return;
+  var contact=contacts.find(function(c){ return c.id===acompDraft.contactId; });
+  var until=Date.now()+acompDraft.mins*60000;
+  acomp={ active:true, dest:acompDraft.dest, mins:acompDraft.mins, contactId:contact.id, contactName:contact.name, contactPhone:contact.phone, startedAt:Date.now(), until:until };
+  save(LS.acomp, acomp);
+  // Notificar al contacto de inicio
+  var msg='👋 Hola, soy AEGIS. '+user.name+' va saliendo hacia '+acomp.dest+' y me pidió avisarte. Llegada estimada: '+new Date(until).toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'})+'. Si no marca que llegó, te aviso de nuevo.';
+  window.open('https://wa.me/'+contact.phone+'?text='+encodeURIComponent(msg),'_blank');
+  resumeAcompActive();
+});
+
+var acompTickIv=null;
+function resumeAcompActive(){
+  show('acompActive');
+  $('#acompDest').textContent='Hacia '+acomp.dest;
+  $('#acompWho').textContent='Le avisaremos a '+acomp.contactName+' si no marcas que llegaste.';
+  tickAcomp();
+  if(acompTickIv) clearInterval(acompTickIv);
+  acompTickIv=setInterval(tickAcomp, 1000);
+}
+function tickAcomp(){
+  if(!acomp || !acomp.active) return;
+  var now=Date.now();
+  var left=Math.max(0, Math.floor((acomp.until-now)/1000));
+  var total=acomp.mins*60;
+  var pct = Math.max(0, Math.min(1, left/total));
+  $('#acompTime').textContent=fmtMS(left);
+  $('#acompRing').setAttribute('stroke-dashoffset', (565.5*(1-pct)).toFixed(1));
+  if(left<=0){ triggerAcompAlert(); }
+}
+function triggerAcompAlert(){
+  if(!acomp || !acomp.active) return;
+  if(acompTickIv){ clearInterval(acompTickIv); acompTickIv=null; }
+  var msg='🚨 ALERTA · '+user.name+' no confirmó llegada a '+acomp.dest+' (se le acabó el tiempo programado en AEGIS). Por favor verifica si está bien.';
+  var url='https://wa.me/'+acomp.contactPhone+'?text='+encodeURIComponent(msg);
+  speak('Atención. El tiempo se acabó y aún no marcas que llegaste. Voy a abrir el aviso para tu contacto.');
+  vibrate([300,100,300,100,300]);
+  // Abrir WhatsApp (requiere que la app esté abierta + el usuario lo confirme)
+  if(confirm('Se acabó el tiempo y aún no marcaste que llegaste. ¿Abrimos WhatsApp para alertar a '+acomp.contactName+'?')){
+    window.open(url,'_blank');
+  }
+  acomp.active=false; save(LS.acomp, acomp);
+}
+$('#acompArrived').addEventListener('click', function(){
+  if(!acomp) return;
+  var contact=contacts.find(function(c){ return c.id===acomp.contactId; });
+  acomp.active=false; save(LS.acomp, acomp);
+  if(acompTickIv){ clearInterval(acompTickIv); acompTickIv=null; }
+  if(contact && confirm('Avísale a '+contact.name+' que ya llegaste bien?')){
+    var msg='✅ '+user.name+' ya llegó a '+acomp.dest+'. Todo bien. — AEGIS';
+    window.open('https://wa.me/'+contact.phone+'?text='+encodeURIComponent(msg),'_blank');
+  }
+  show('home');
+});
+$('#acompExtend').addEventListener('click', function(){
+  if(!acomp) return;
+  acomp.until += 15*60000; acomp.mins += 15; save(LS.acomp, acomp);
+  tickAcomp();
+});
+$('#acompCancel').addEventListener('click', function(){
+  if(!confirm('¿Cancelar acompañamiento? Tu contacto no recibirá la alerta.')) return;
+  acomp=null; save(LS.acomp, null);
+  if(acompTickIv){ clearInterval(acompTickIv); acompTickIv=null; }
+  show('home');
+});
+
+/* ===================== CÍRCULO ===================== */
+function renderCirculo(){
+  var list=$('#circList'); list.innerHTML='';
+  if(!contacts.length){
+    list.innerHTML='<p style="color:var(--muted);font-size:13px">No hay contactos. Agrega al menos uno.</p>';
+  }
+  contacts.forEach(function(c){
+    var row=document.createElement('div'); row.className='contact-row';
+    row.innerHTML='<div style="width:40px;height:40px;background:rgba(255,42,54,.15);color:var(--accent);border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700">'+initials(c.name)+'</div>'+
+      '<div class="info"><div class="n">'+escapeHtml(c.name)+'</div><div class="p">+'+c.phone+'</div></div>'+
+      '<button class="del" data-id="'+c.id+'">✕</button>';
+    list.appendChild(row);
+  });
+  list.querySelectorAll('.del').forEach(function(b){
+    b.addEventListener('click', function(){
+      var id=b.getAttribute('data-id');
+      if(!confirm('¿Quitar este contacto de tu círculo?')) return;
+      contacts=contacts.filter(function(x){ return x.id!==id; });
+      save(LS.contacts, contacts); renderCirculo();
+      $('#homeStatus').textContent= contacts.length+' '+(contacts.length===1?'contacto':'contactos')+' en tu círculo';
+    });
+  });
+}
+$('#circAdd').addEventListener('click', function(){ openAddContact('circulo'); });
+
+/* ===================== ASESORÍA ===================== */
+var ASESOR=[
+  {id:'siguen', t:'Si te siguen en la calle', d:'Pasos concretos para no llegar a peligro mayor.', pasos:[
+    'No corras: caminar firme te da control.',
+    'Cambia de acera y de ruta de inmediato.',
+    'Métete a un lugar con gente: tienda, banco, restaurante.',
+    'Saca el teléfono: habla en voz alta como si te esperaran.',
+    'Foto discreta si puedes (cara, ropa, vehículo).',
+    'Activa SOS y comparte ubicación.'
+  ]},
+  {id:'asalto', t:'Si te están asaltando', d:'Prioridad: tu vida sobre tus cosas.', pasos:[
+    'No te resistas si solo es material. Entrega sin gestos bruscos.',
+    'Mantén la voz baja y los movimientos lentos.',
+    'Memoriza: cara, voz, ropa, tatuajes, vehículo, placa.',
+    'En cuanto se vayan, refugio + 911 + activa SOS.',
+    'No corras detrás de ellos.'
+  ]},
+  {id:'casa', t:'Llegando a casa por la noche', d:'Cómo entrar de forma segura.', pasos:[
+    'Antes de bajarte del auto/Uber, revisa el entorno 360°.',
+    'Llaves listas en la mano antes de bajarte (no las busques en la puerta).',
+    'Si alguien sospechoso está cerca, no entres: da la vuelta y avisa.',
+    'Cierra inmediatamente al entrar, no dejes la puerta abierta "un segundo".',
+    'Si vas sola/o, activa Acompáñame antes de salir.'
+  ]},
+  {id:'auto', t:'Si te detiene un auto en el camino', d:'Reglas básicas en la carretera.', pasos:[
+    'No te detengas en lugares solitarios. Avanza hasta una gasolinera o caseta.',
+    'Si te marca una patrulla, llama al 911 para verificar antes de bajarte.',
+    'Mantén ventanas cerradas y seguros puestos.',
+    'No abras la puerta a desconocidos en semáforos.',
+    'Si te embisten suave por atrás, no te bajes: avanza hasta zona segura.'
+  ]},
+  {id:'transporte', t:'En transporte público o app', d:'Antes y durante el viaje.', pasos:[
+    'Comparte el viaje con un contacto desde la app.',
+    'Verifica placa y modelo del vehículo antes de subir.',
+    'Siéntate atrás del lado contrario del conductor.',
+    'Si la ruta cambia sin razón, dilo en voz alta y pide bajar.',
+    'Activa Acompáñame con tu destino.'
+  ]},
+  {id:'cita', t:'Primera cita o conocer a alguien nuevo', d:'Antes, durante y después.', pasos:[
+    'Comparte con quién vas, dónde y a qué hora regresas.',
+    'Llega y vete por tu cuenta (no que pasen por ti).',
+    'No pierdas de vista tu bebida.',
+    'Si algo se siente raro, vete: tu instinto vale más que la incomodidad.',
+    'Mensaje de check-in a un contacto a mitad.'
+  ]}
+];
+function renderAsesoria(){
+  var list=$('#asesorList'); list.innerHTML=''; $('#asesorDetail').style.display='none';
+  ASESOR.forEach(function(a){
+    var c=document.createElement('div'); c.className='asesor-card';
+    c.innerHTML='<h3>'+a.t+'</h3><p>'+a.d+'</p>';
+    c.addEventListener('click', function(){ openAsesor(a); });
+    list.appendChild(c);
+  });
+}
+function openAsesor(a){
+  $('#asesorList').style.display='none';
+  var d=$('#asesorDetail');
+  var html='<h3 style="font-size:18px;font-weight:600;margin-bottom:6px">'+a.t+'</h3>';
+  html+='<p style="color:var(--muted);font-size:13px">'+a.d+'</p><ol>';
+  a.pasos.forEach(function(p){ html+='<li>'+escapeHtml(p)+'</li>'; });
+  html+='</ol><div class="row" style="margin-top:14px"><button class="btn ghost" id="asesorBack">← Volver</button><button class="btn dark" id="asesorRead">🔊 Leer en voz</button></div>';
+  d.innerHTML=html; d.style.display='block';
+  document.getElementById('asesorBack').addEventListener('click', renderAsesoria);
+  document.getElementById('asesorRead').addEventListener('click', function(){ speak(a.t+'. '+a.pasos.join('. ')); });
+}
+
+/* ===================== AJUSTES ===================== */
+function openAjustes(){
+  $('#setName').value=user.name||'';
+  $('#setVoice').checked=voiceOn;
+}
+$('#setName').addEventListener('input', function(e){
+  var v=(e.target.value||'').trim().slice(0,24);
+  if(v.length>=2){ user.name=v; save(LS.user,user); $('#homeName').textContent='Hola, '+v; }
+});
+$('#setVoice').addEventListener('change', function(e){ voiceOn=!!e.target.checked; save(LS.voice, voiceOn); });
+$('#setReset').addEventListener('click', function(){
+  if(!confirm('¿Borrar tu nombre, contactos y todo? Esta acción no se puede deshacer.')) return;
+  localStorage.removeItem(LS.user); localStorage.removeItem(LS.contacts);
+  localStorage.removeItem(LS.acomp); localStorage.removeItem(LS.voice);
+  user=null; contacts=[]; acomp=null; voiceOn=true;
+  decideStart();
+});
+
+/* ===================== HOOK CAMBIO DE PANTALLA ===================== */
+var _origShow=show;
+window.show=show;
+document.addEventListener('click', function(e){
+  var t=e.target.closest('[data-go]'); if(!t) return;
+  var g=t.getAttribute('data-go');
+  if(g==='circulo') setTimeout(renderCirculo,10);
+  if(g==='asesoria') setTimeout(renderAsesoria,10);
+  if(g==='ajustes') setTimeout(openAjustes,10);
+});
+
+/* ===================== ARRANQUE ===================== */
+decideStart();
+// Si había acompañamiento activo, retomarlo
+if(acomp && acomp.active && Date.now()<acomp.until){
+  setTimeout(function(){ resumeAcompActive(); }, 300);
+} else if(acomp && acomp.active && Date.now()>=acomp.until){
+  // Se pasó el tiempo mientras app cerrada — alertar al volver
+  setTimeout(function(){
+    if(confirm('Tu acompañamiento se pasó del tiempo mientras la app estaba cerrada. ¿Avisar a tu contacto ahora?')){
+      var msg='🚨 ALERTA · '+user.name+' no confirmó llegada a '+acomp.dest+'. Por favor verifica.';
+      window.open('https://wa.me/'+acomp.contactPhone+'?text='+encodeURIComponent(msg),'_blank');
+    }
+    acomp.active=false; save(LS.acomp, acomp);
+  }, 600);
+}
+
+/* ===================== PWA ===================== */
+if('serviceWorker' in navigator){
+  window.addEventListener('load', function(){
+    navigator.serviceWorker.register('/service-worker.js').catch(function(){});
+  });
+}
+
+})();
+</script>
+</body>
+</html>
