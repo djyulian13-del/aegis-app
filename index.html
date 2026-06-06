@@ -578,6 +578,85 @@ function trackingUrl(){
   return location.origin + '/sos.html?id=' + sosSessionId;
 }
 
+/* ===================== SOS · ESCUCHAR RESPUESTAS DE TU CÍRCULO ===================== */
+var sosPollIv=null, lastStatusCount=0;
+function startSosPolling(){
+  if(sosPollIv) clearInterval(sosPollIv);
+  lastStatusCount=0;
+  // limpiar banners de un SOS anterior
+  var box=document.getElementById('sosStatusBox'); if(box) box.innerHTML='';
+  var prompt=document.getElementById('sosAttendedPrompt'); if(prompt) prompt.remove();
+  // crear contenedor de banners si no existe
+  if(!document.getElementById('sosStatusBox')){
+    var b=document.createElement('div');
+    b.id='sosStatusBox';
+    b.style.cssText='margin-top:12px;display:flex;flex-direction:column;gap:8px;';
+    var active=document.getElementById('sosActive');
+    var ref=document.getElementById('sosTypeWrap');
+    if(active && ref){ active.insertBefore(b, ref); } else if(active){ active.appendChild(b); }
+  }
+  sosPollIv=setInterval(pollSos, 5000);
+  setTimeout(pollSos, 1500);
+}
+function stopSosPolling(){
+  if(sosPollIv){ clearInterval(sosPollIv); sosPollIv=null; }
+}
+function pollSos(){
+  if(!sosSessionId) return;
+  try{
+    fetch('/api/sos/get?id='+encodeURIComponent(sosSessionId))
+      .then(function(r){ return r.json(); })
+      .then(function(d){
+        if(!d || d.notFound || !d.status) return;
+        if(d.status.length > lastStatusCount){
+          var nuevos = d.status.slice(lastStatusCount);
+          lastStatusCount = d.status.length;
+          var box = document.getElementById('sosStatusBox');
+          nuevos.forEach(function(s){
+            if(s.action === 'atendida'){
+              showSafePrompt(s.who);
+            } else {
+              var label = s.action === 'voy_en_camino' ? 'va en camino' : 'llamó al 911';
+              var icon  = s.action === 'voy_en_camino' ? '🚗' : '📞';
+              if(box){
+                var b = document.createElement('div');
+                b.style.cssText = 'padding:11px 14px;background:#0c131b;border:1px solid rgba(54,211,153,.35);border-radius:10px;font-size:14px;color:var(--ink);animation:fadeIn .4s';
+                b.innerHTML = icon + ' <b>' + escapeHtml(s.who||'Contacto') + '</b> ' + label;
+                box.appendChild(b);
+              }
+              vibrate(200);
+              if(voiceOn) speak((s.who||'Tu contacto') + ' ' + label);
+            }
+          });
+        }
+      })
+      .catch(function(){});
+  }catch(e){}
+}
+function showSafePrompt(who){
+  if(document.getElementById('sosAttendedPrompt')) return; // ya está
+  var p = document.createElement('div');
+  p.id = 'sosAttendedPrompt';
+  p.style.cssText = 'padding:16px 18px;background:linear-gradient(180deg,#1f9e74,#0d4e3b);border-radius:12px;color:#04261c;margin-top:12px;box-shadow:0 10px 30px -10px rgba(54,211,153,.5);animation:fadeIn .4s';
+  p.innerHTML =
+    '<div style="font-weight:700;font-size:15px;margin-bottom:6px">✓ '+escapeHtml(who||'Tu contacto')+' marcó que ya está atendida.</div>'+
+    '<div style="font-size:13px;margin-bottom:12px;opacity:.85">Si tú ya estás bien, cierra el SOS con un toque:</div>'+
+    '<button id="sosAttendedConfirm" style="appearance:none;border:none;cursor:pointer;width:100%;padding:14px;border-radius:10px;background:#fff;color:#04261c;font-weight:800;font-size:15px">✓ Sí, estoy a salvo</button>';
+  var active = document.getElementById('sosActive');
+  var first = active.querySelector('.eyebrow');
+  if(first && first.nextSibling) active.insertBefore(p, first.nextSibling); else active.insertBefore(p, active.firstChild);
+  document.getElementById('sosAttendedConfirm').addEventListener('click', function(){
+    stopSpeak();
+    stopAlarm();
+    stopSosPolling();
+    stopSosTracking(true);
+    p.remove();
+    show('home');
+  });
+  vibrate([300,100,300]);
+  if(voiceOn) speak((who||'Tu contacto')+' marcó que ya está atendida. Si estás bien, toca el botón verde.');
+}
+
 /* ===================== HOME · SOS ===================== */
 $('#sosBtn').addEventListener('click', function(){
   if(contacts.length<1){ alert('Primero agrega al menos un contacto en tu círculo.'); show('circulo'); renderCirculo(); return; }
@@ -599,7 +678,7 @@ function startSosCountdown(){
 }
 $('#cancelSos').addEventListener('click', function(){
   if(cdInterval){ clearInterval(cdInterval); cdInterval=null; }
-  stopAlarm(); stopSosTracking(false);
+  stopAlarm(); stopSosPolling(); stopSosTracking(false);
   stopSpeak(); show('home');
 });
 
@@ -609,9 +688,10 @@ function activateSos(){
   $('#sosTypeWrap').style.display='block';
   $('#sosProtocol').style.display='none';
 
-  // 🚨 Alarma y seguimiento en vivo
+  // 🚨 Alarma, seguimiento en vivo y escucha de respuestas
   startAlarm();
   startSosTracking();
+  startSosPolling();
 
   // Pintar contactos en cuanto haya sessionId (la ubicación se completa cuando llega)
   renderSosContacts();
@@ -671,7 +751,9 @@ $('#sosSafe').addEventListener('click', function(){
   if(confirm('¿Marcar que ya estás a salvo? Se apaga la alarma, se detiene el seguimiento, y tu círculo lo verá en su pantalla.')){
     stopSpeak();
     stopAlarm();
+    stopSosPolling();
     stopSosTracking(true); // avisa al backend que está a salvo
+    var p=document.getElementById('sosAttendedPrompt'); if(p) p.remove();
     show('home');
   }
 });
