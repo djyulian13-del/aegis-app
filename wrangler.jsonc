@@ -1,0 +1,20 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "aegis-app",
+  "main": "_worker.js",
+  "compatibility_date": "2026-05-24",
+  "compatibility_flags": ["nodejs_compat"],
+  "assets": {
+    "directory": "./",
+    "binding": "ASSETS"
+  },
+  "kv_namespaces": [
+    {
+      "binding": "AEGIS_SOS",
+      "id": "39280b505eac4f1db5bf12948d28e0da"
+    }
+  ],
+  "observability": {
+    "enabled": true
+  }
+}

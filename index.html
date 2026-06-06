@@ -489,9 +489,99 @@ function speak(text){
 }
 function stopSpeak(){ try{ if('speechSynthesis' in window) window.speechSynthesis.cancel(); }catch(e){} }
 
+/* ===================== AUDIO · ALARMA SOS ===================== */
+var actx=null, master=null;
+function audio(){
+  if(actx){ if(actx.state==='suspended'){ try{ actx.resume(); }catch(e){} } return actx; }
+  try{
+    actx = new (window.AudioContext||window.webkitAudioContext)();
+    master = actx.createGain(); master.gain.value=1.0; master.connect(actx.destination);
+    if(actx.state==='suspended'){ try{ actx.resume(); }catch(e){} }
+  }catch(e){ actx=null; }
+  return actx;
+}
+var alarmOsc=null, alarmGain=null, alarmIv=null, alarmActive=false;
+function startAlarm(){
+  if(alarmActive) return;
+  if(!audio()) return;
+  alarmActive=true;
+  alarmOsc = actx.createOscillator();
+  alarmGain = actx.createGain();
+  alarmOsc.type='square';
+  alarmOsc.frequency.value=860;
+  alarmGain.gain.setValueAtTime(0.0001, actx.currentTime);
+  alarmGain.gain.linearRampToValueAtTime(0.18, actx.currentTime+0.05);
+  alarmOsc.connect(alarmGain); alarmGain.connect(master);
+  alarmOsc.start();
+  var toggle=false;
+  alarmIv = setInterval(function(){
+    if(!alarmActive) return;
+    toggle = !toggle;
+    try{ alarmOsc.frequency.setTargetAtTime(toggle?1180:660, actx.currentTime, 0.005); }catch(e){}
+  }, 280);
+}
+function stopAlarm(){
+  if(!alarmActive) return; alarmActive=false;
+  if(alarmIv){ clearInterval(alarmIv); alarmIv=null; }
+  try{
+    alarmGain.gain.cancelScheduledValues(actx.currentTime);
+    alarmGain.gain.linearRampToValueAtTime(0.0001, actx.currentTime+0.1);
+    alarmOsc.stop(actx.currentTime+0.15);
+  }catch(e){}
+  alarmOsc=null; alarmGain=null;
+}
+
+/* ===================== SOS · UBICACIÓN EN TIEMPO REAL ===================== */
+var sosSessionId=null, sosWatchId=null, sosPostIv=null, lastSosPos=null;
+function newSessionId(){
+  return (Math.random().toString(36).slice(2,8)+Math.random().toString(36).slice(2,8)+Date.now().toString(36)).slice(0,16);
+}
+function startSosTracking(){
+  sosSessionId = newSessionId();
+  if(navigator.geolocation){
+    sosWatchId = navigator.geolocation.watchPosition(function(pos){
+      lastSosPos = { lat:pos.coords.latitude, lng:pos.coords.longitude, accuracy:Math.round(pos.coords.accuracy||0) };
+      postSosLocation();
+    }, function(err){ /* ignore */ }, {enableHighAccuracy:true, timeout:15000, maximumAge:3000});
+  }
+  sosPostIv = setInterval(postSosLocation, 8000);
+}
+function postSosLocation(){
+  if(!sosSessionId || !lastSosPos) return;
+  try{
+    fetch('/api/sos/update', {
+      method:'POST',
+      headers:{'content-type':'application/json'},
+      body: JSON.stringify({ id:sosSessionId, user:user.name, lat:lastSosPos.lat, lng:lastSosPos.lng, accuracy:lastSosPos.accuracy })
+    }).catch(function(){});
+  }catch(e){}
+}
+function stopSosTracking(safe){
+  if(sosWatchId !== null && sosWatchId !== undefined){
+    try{ navigator.geolocation.clearWatch(sosWatchId); }catch(e){}
+    sosWatchId=null;
+  }
+  if(sosPostIv){ clearInterval(sosPostIv); sosPostIv=null; }
+  if(safe && sosSessionId){
+    try{
+      fetch('/api/sos/update', {
+        method:'POST',
+        headers:{'content-type':'application/json'},
+        body: JSON.stringify({ id:sosSessionId, safe:true })
+      }).catch(function(){});
+    }catch(e){}
+  }
+  sosSessionId=null; lastSosPos=null;
+}
+function trackingUrl(){
+  if(!sosSessionId) return null;
+  return location.origin + '/sos.html?id=' + sosSessionId;
+}
+
 /* ===================== HOME · SOS ===================== */
 $('#sosBtn').addEventListener('click', function(){
   if(contacts.length<1){ alert('Primero agrega al menos un contacto en tu círculo.'); show('circulo'); renderCirculo(); return; }
+  audio(); // desbloquea audio para la alarma (debe ser dentro del gesto)
   startSosCountdown();
 });
 
@@ -509,27 +599,22 @@ function startSosCountdown(){
 }
 $('#cancelSos').addEventListener('click', function(){
   if(cdInterval){ clearInterval(cdInterval); cdInterval=null; }
+  stopAlarm(); stopSosTracking(false);
   stopSpeak(); show('home');
 });
 
-var sosLocation=null;
 function activateSos(){
   show('sosActive');
   vibrate([100,80,100,80,200]);
   $('#sosTypeWrap').style.display='block';
   $('#sosProtocol').style.display='none';
 
-  if(navigator.geolocation){
-    navigator.geolocation.getCurrentPosition(function(pos){
-      sosLocation={ lat:pos.coords.latitude, lng:pos.coords.longitude, accuracy:Math.round(pos.coords.accuracy||0) };
-      renderSosContacts();
-    }, function(err){
-      sosLocation=null;
-      renderSosContacts();
-    }, {enableHighAccuracy:true, timeout:8000, maximumAge:0});
-  } else {
-    renderSosContacts();
-  }
+  // 🚨 Alarma y seguimiento en vivo
+  startAlarm();
+  startSosTracking();
+
+  // Pintar contactos en cuanto haya sessionId (la ubicación se completa cuando llega)
+  renderSosContacts();
 
   setTimeout(function(){
     speak('Tu círculo ya sabe. Toca enviar a cada contacto. Cuéntame qué está pasando.');
@@ -538,18 +623,23 @@ function activateSos(){
 
 function renderSosContacts(){
   var list=$('#sosContactList'); list.innerHTML='';
-  var loc = sosLocation;
-  var locTxt = loc ? ('https://maps.google.com/?q='+loc.lat+','+loc.lng) : '(ubicación no disponible)';
   contacts.forEach(function(c){
     var row=document.createElement('div'); row.className='contact-send'; row.dataset.id=c.id;
     row.innerHTML='<div class="avatar">'+initials(c.name)+'</div>'+
       '<div class="info"><div class="n">'+escapeHtml(c.name)+'</div><div class="p">+'+c.phone+'</div></div>'+
       '<button class="send">Enviar</button>';
     row.querySelector('.send').addEventListener('click', function(){
-      var msg='🚨 EMERGENCIA · '+user.name+' necesita ayuda.';
-      if(loc){ msg+='\n\n📍 Ubicación: '+locTxt+'\n(precisión ~'+loc.accuracy+'m)'; }
-      else { msg+='\n\n(No pude obtener ubicación. Llámale ya.)'; }
-      msg+='\n\nEste aviso lo envió AEGIS.';
+      var track = trackingUrl();
+      var msg = '🚨 EMERGENCIA · '+user.name+' necesita ayuda.';
+      if(track){
+        msg += '\n\n📍 UBICACIÓN EN VIVO (se actualiza sola):\n'+track;
+        msg += '\n\nToca el link y marca tu respuesta: voy en camino · 911 · atendida.';
+      } else if(lastSosPos){
+        msg += '\n\n📍 Ubicación: https://maps.google.com/?q='+lastSosPos.lat+','+lastSosPos.lng;
+      } else {
+        msg += '\n\n(Aún no obtengo ubicación. Llámale ya.)';
+      }
+      msg += '\n\n— AEGIS';
       var url='https://wa.me/'+c.phone+'?text='+encodeURIComponent(msg);
       row.classList.add('sent');
       row.querySelector('.send').textContent='✓ Enviado';
@@ -578,8 +668,10 @@ $$('#sosTypes button').forEach(function(b){
   });
 });
 $('#sosSafe').addEventListener('click', function(){
-  stopSpeak();
-  if(confirm('¿Marcar que ya estás a salvo? Esto solo cierra la pantalla; si quieres avisarle a tu círculo manda un WhatsApp.')){
+  if(confirm('¿Marcar que ya estás a salvo? Se apaga la alarma, se detiene el seguimiento, y tu círculo lo verá en su pantalla.')){
+    stopSpeak();
+    stopAlarm();
+    stopSosTracking(true); // avisa al backend que está a salvo
     show('home');
   }
 });

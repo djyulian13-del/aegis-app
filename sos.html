@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>SOS · AEGIS</title>
+<meta name="description" content="Página de seguimiento en vivo de una emergencia AEGIS." />
+<meta name="theme-color" content="#070405" />
+<meta name="robots" content="noindex" />
+<link rel="icon" href="/icon-192.png" />
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+  integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+<style>
+  :root{
+    --bg:#070405; --ink:#f4eaea; --muted:#8f7d80;
+    --accent:#ff2a36; --accent-dim:#8f0c14; --green:#36d399;
+    --font:'Segoe UI',system-ui,-apple-system,Roboto,Helvetica,Arial,sans-serif;
+    --mono:'SFMono-Regular',ui-monospace,Menlo,Consolas,monospace;
+    --safe-top:env(safe-area-inset-top); --safe-bot:env(safe-area-inset-bottom);
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  html,body{height:100%}
+  body{font-family:var(--font); color:var(--ink); background:var(--bg); overflow:hidden}
+  #wrap{position:fixed; inset:0; display:flex; flex-direction:column}
+  .head{padding:calc(14px + var(--safe-top)) 18px 14px; background:linear-gradient(180deg,#1a0204,#0a0203);
+    border-bottom:1px solid rgba(255,42,54,.25); flex-shrink:0}
+  .head .top{display:flex; align-items:center; gap:10px}
+  .pulse{width:10px; height:10px; border-radius:50%; background:var(--accent); box-shadow:0 0 0 0 rgba(255,42,54,.7); animation:pulse 1.4s infinite}
+  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(255,42,54,.6)}70%{box-shadow:0 0 0 14px rgba(255,42,54,0)}100%{box-shadow:0 0 0 0 rgba(255,42,54,0)}}
+  .head .badge{font-family:var(--mono); font-size:11px; letter-spacing:.22em; text-transform:uppercase; color:var(--accent)}
+  .head h1{font-size:22px; font-weight:700; margin-top:6px}
+  .head .meta{font-size:12px; color:var(--muted); margin-top:4px; font-family:var(--mono)}
+  .safe-banner{background:linear-gradient(180deg,#1f9e74,#0d4e3b); color:#04261c; padding:14px 18px; font-weight:700; text-align:center; display:none}
+  .safe-banner.on{display:block}
+  #map{flex:1; min-height:200px; background:#0a0a0a; filter:saturate(.85)}
+  .actions{padding:12px 14px calc(14px + var(--safe-bot)); background:linear-gradient(0deg,#0a0203,#120607); border-top:1px solid rgba(255,255,255,.06); flex-shrink:0}
+  .actions .who{margin-bottom:10px}
+  .actions .who input{width:100%; padding:11px 14px; background:rgba(255,255,255,.04); color:var(--ink);
+    border:1px solid rgba(255,255,255,.12); border-radius:10px; font-size:14px; font-family:var(--font); outline:none}
+  .actions .row{display:flex; gap:8px}
+  .actions .btn{flex:1; appearance:none; border:none; cursor:pointer; padding:13px 6px; border-radius:11px;
+    font-family:var(--font); font-size:13px; font-weight:600; line-height:1.2}
+  .btn-go{background:linear-gradient(180deg,#3ea2ff,#1a4fa1); color:#fff}
+  .btn-911{background:linear-gradient(180deg,#ff8a3e,#a14a1a); color:#1a0a04}
+  .btn-done{background:linear-gradient(180deg,#48e6ab,#1f9e74); color:#04261c}
+  .btn-go:active, .btn-911:active, .btn-done:active{transform:scale(.97); filter:brightness(.95)}
+  .updates{padding:10px 18px; max-height:120px; overflow-y:auto; font-size:13px; color:var(--muted)}
+  .updates .u{padding:6px 0; border-bottom:1px dashed rgba(255,255,255,.08)}
+  .updates .u b{color:var(--ink)}
+  .updates .u.go b{color:#5db4ff} .updates .u.c911 b{color:#ffaa66} .updates .u.done b{color:var(--green)}
+  .empty{padding:24px; text-align:center; color:var(--muted); font-size:14px}
+  .empty h2{font-size:18px; color:var(--ink); margin-bottom:8px}
+  .leaflet-container{background:#0a0a0a}
+  .leaflet-tile-pane{filter:invert(.92) hue-rotate(170deg) saturate(.5) brightness(.95)}
+  .pin{width:26px; height:26px; border-radius:50%; background:var(--accent);
+    border:3px solid #fff; box-shadow:0 0 0 6px rgba(255,42,54,.25), 0 0 0 14px rgba(255,42,54,.1); animation:pinpulse 1.6s infinite}
+  @keyframes pinpulse{0%,100%{box-shadow:0 0 0 6px rgba(255,42,54,.25), 0 0 0 14px rgba(255,42,54,.1)}50%{box-shadow:0 0 0 10px rgba(255,42,54,.15), 0 0 0 20px rgba(255,42,54,.05)}}
+  .toast{position:fixed; left:50%; bottom:calc(120px + var(--safe-bot)); transform:translateX(-50%);
+    background:#0c131b; border:1px solid rgba(255,42,54,.4); color:var(--ink); padding:11px 18px;
+    border-radius:99px; font-size:13px; opacity:0; transition:.3s; pointer-events:none; z-index:1000}
+  .toast.show{opacity:1}
+</style>
+</head>
+<body>
+
+<div id="wrap">
+  <div class="head">
+    <div class="top"><span class="pulse"></span><span class="badge">SOS · AEGIS</span></div>
+    <h1 id="title">Cargando…</h1>
+    <div class="meta" id="meta">—</div>
+  </div>
+  <div class="safe-banner" id="safe">✓ Ya está a salvo — la persona marcó que está bien.</div>
+  <div id="map"></div>
+  <div class="updates" id="updates" style="display:none"></div>
+  <div class="actions">
+    <div class="who"><input id="who" type="text" placeholder="Tu nombre (para que sepa quién respondió)" maxlength="32" /></div>
+    <div class="row">
+      <button class="btn btn-go" data-a="voy_en_camino">🚗 Voy en camino</button>
+      <button class="btn btn-911" data-a="llame_911">📞 Llamé al 911</button>
+      <button class="btn btn-done" data-a="atendida">✓ Atendida</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+<div id="empty" class="empty" style="display:none">
+  <h2>Esta sesión SOS no existe o ya caducó.</h2>
+  <p>Las sesiones AEGIS expiran a las 24 horas por seguridad.</p>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+  integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<script>
+(function(){
+  "use strict";
+  var id = new URLSearchParams(location.search).get('id');
+  if (!id) { document.getElementById('wrap').style.display='none'; document.getElementById('empty').style.display='block'; return; }
+
+  var map, marker, trail, lastPos=null;
+  function ensureMap(lat, lng){
+    if (map) return;
+    map = L.map('map', { zoomControl:true, attributionControl:false }).setView([lat,lng], 16);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom:19 }).addTo(map);
+    L.control.attribution({prefix:false}).addAttribution('© OpenStreetMap').addTo(map);
+    var icon = L.divIcon({ className:'', html:'<div class="pin"></div>', iconSize:[26,26], iconAnchor:[13,13] });
+    marker = L.marker([lat,lng], { icon:icon }).addTo(map);
+    trail  = L.polyline([], { color:'#ff2a36', weight:3, opacity:.6, dashArray:'4,6' }).addTo(map);
+  }
+  function updateMap(history){
+    if (!history || !history.length) return;
+    var last = history[history.length-1];
+    ensureMap(last.lat, last.lng);
+    var pts = history.map(function(p){ return [p.lat, p.lng]; });
+    trail.setLatLngs(pts);
+    marker.setLatLng([last.lat, last.lng]);
+    // Recentrar suavemente si la ubicación cambió bastante
+    if (!lastPos || (Math.abs(lastPos.lat-last.lat)>0.0008 || Math.abs(lastPos.lng-last.lng)>0.0008)) {
+      map.panTo([last.lat, last.lng]);
+    }
+    lastPos = last;
+  }
+
+  function fmt(ts){
+    var d = new Date(ts);
+    return d.toLocaleTimeString('es-MX', { hour:'2-digit', minute:'2-digit', second:'2-digit' });
+  }
+  function elapsed(ts){
+    var s = Math.max(0, Math.floor((Date.now()-ts)/1000));
+    if (s < 60) return 'hace '+s+'s';
+    var m = Math.floor(s/60); var sx = s%60;
+    if (m < 60) return 'hace '+m+'m '+sx+'s';
+    var h = Math.floor(m/60);
+    return 'hace '+h+'h '+(m%60)+'m';
+  }
+
+  var ACTION_LABEL = { voy_en_camino:'va en camino', llame_911:'llamó al 911', atendida:'marcó atendida' };
+  function renderStatus(entry){
+    var box = document.getElementById('updates');
+    if (!entry.status || !entry.status.length) { box.style.display='none'; return; }
+    box.style.display='block';
+    box.innerHTML = entry.status.slice().reverse().map(function(s){
+      var cls = (s.action==='voy_en_camino') ? 'go' : (s.action==='llame_911') ? 'c911' : 'done';
+      return '<div class="u '+cls+'"><b>'+escapeHtml(s.who||'Contacto')+'</b> '+ACTION_LABEL[s.action]+' · '+fmt(s.ts)+'</div>';
+    }).join('');
+  }
+  function escapeHtml(s){ return (s||'').replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+
+  var notFoundShown=false;
+  async function poll(){
+    try {
+      var r = await fetch('/api/sos/get?id='+encodeURIComponent(id));
+      var d = await r.json();
+      if (d.notFound) {
+        if (!notFoundShown) { notFoundShown=true; document.getElementById('wrap').style.display='none'; document.getElementById('empty').style.display='block'; }
+        return;
+      }
+      document.getElementById('title').textContent = (d.user || 'Persona') + (d.safe ? ' · A salvo' : ' necesita ayuda');
+      var lastUpd = d.lastUpdate || d.createdAt;
+      var lastPosTs = (d.history && d.history.length) ? d.history[d.history.length-1].ts : lastUpd;
+      document.getElementById('meta').textContent = (d.history && d.history.length ? d.history.length+' puntos · ' : '') +
+        'última señal '+elapsed(lastPosTs) + ' · '+fmt(lastUpd);
+      if (d.safe) document.getElementById('safe').classList.add('on'); else document.getElementById('safe').classList.remove('on');
+      updateMap(d.history || []);
+      renderStatus(d);
+    } catch(e){}
+  }
+  poll();
+  setInterval(poll, 6000);
+
+  // Acciones del contacto
+  function toast(text){
+    var t = document.getElementById('toast'); t.textContent=text; t.classList.add('show');
+    setTimeout(function(){ t.classList.remove('show'); }, 2400);
+  }
+  document.querySelectorAll('.btn[data-a]').forEach(function(b){
+    b.addEventListener('click', async function(){
+      var who = (document.getElementById('who').value||'').trim() || 'Contacto';
+      var action = b.getAttribute('data-a');
+      try {
+        await fetch('/api/sos/status', {
+          method:'POST', headers:{'content-type':'application/json'},
+          body: JSON.stringify({ id:id, who:who, action:action })
+        });
+        toast('✓ Registrado: '+ACTION_LABEL[action]);
+        poll();
+      } catch(e){ toast('No pude registrar; revisa tu conexión.'); }
+    });
+  });
+})();
+</script>
+</body>
+</html>
