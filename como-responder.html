@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>Cómo responder un SOS · AEGIS</title>
+<meta name="description" content="Protocolo para responder a una alerta de emergencia AEGIS. Qué hacer y qué no hacer cuando alguien te comparte su SOS." />
+<meta name="theme-color" content="#070405" />
+<meta name="robots" content="noindex" />
+<link rel="icon" href="/icon-192.png" />
+<style>
+  :root{
+    --bg:#070405; --ink:#f4eaea; --muted:#8f7d80;
+    --accent:#ff2a36; --accent-dim:#8f0c14; --green:#36d399; --blue:#5db4ff; --amber:#ffaa66;
+    --font:'Segoe UI',system-ui,-apple-system,Roboto,Helvetica,Arial,sans-serif;
+    --mono:'SFMono-Regular',ui-monospace,Menlo,Consolas,monospace;
+    --safe-top:env(safe-area-inset-top); --safe-bot:env(safe-area-inset-bottom);
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  html{scroll-behavior:smooth}
+  body{font-family:var(--font); color:var(--ink); background:var(--bg);
+    background-image:radial-gradient(1200px 500px at 50% -200px, rgba(255,42,54,.10), transparent 70%);
+    min-height:100%; line-height:1.55; -webkit-font-smoothing:antialiased}
+  .wrap{max-width:620px; margin:0 auto; padding:calc(20px + var(--safe-top)) 20px calc(40px + var(--safe-bot))}
+
+  /* Encabezado */
+  .head{padding-bottom:18px; border-bottom:1px solid rgba(255,42,54,.22); margin-bottom:22px}
+  .top{display:flex; align-items:center; gap:10px}
+  .pulse{width:10px; height:10px; border-radius:50%; background:var(--accent);
+    box-shadow:0 0 0 0 rgba(255,42,54,.7); animation:pulse 1.4s infinite}
+  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(255,42,54,.6)}70%{box-shadow:0 0 0 14px rgba(255,42,54,0)}100%{box-shadow:0 0 0 0 rgba(255,42,54,0)}}
+  .badge{font-family:var(--mono); font-size:11px; letter-spacing:.22em; text-transform:uppercase; color:var(--accent)}
+  h1{font-size:26px; font-weight:700; margin-top:12px; letter-spacing:-.01em}
+  .sub{color:var(--muted); font-size:15px; margin-top:8px}
+
+  /* Respira */
+  .breathe{margin:22px 0; padding:16px 18px; border-radius:14px;
+    background:linear-gradient(180deg, rgba(54,211,153,.10), rgba(54,211,153,.03));
+    border:1px solid rgba(54,211,153,.28)}
+  .breathe b{color:var(--green)}
+  .breathe p{color:var(--ink); font-size:15px}
+
+  /* Pasos */
+  .steps{margin-top:8px; display:flex; flex-direction:column; gap:14px}
+  .step{display:flex; gap:14px; padding:16px; border-radius:14px;
+    background:rgba(255,255,255,.035); border:1px solid rgba(255,255,255,.08)}
+  .num{flex-shrink:0; width:34px; height:34px; border-radius:50%;
+    display:flex; align-items:center; justify-content:center; font-family:var(--mono);
+    font-weight:700; font-size:15px; color:#fff; background:linear-gradient(180deg,#ff3d49,#8f0c14)}
+  .step .body{flex:1}
+  .step h3{font-size:16px; font-weight:700; margin-bottom:4px}
+  .step p{font-size:14px; color:var(--muted)}
+  .step p b{color:var(--ink)}
+
+  /* Paso de advertencia (NO llames) */
+  .step.warn{background:linear-gradient(180deg, rgba(255,42,54,.10), rgba(255,42,54,.03)); border-color:rgba(255,42,54,.34)}
+  .step.warn .num{background:linear-gradient(180deg,#ff8a3e,#a14a1a); color:#1a0a04}
+  .step.warn h3{color:#ff7a82}
+
+  /* No vayas solo */
+  .step.blue .num{background:linear-gradient(180deg,#3ea2ff,#1a4fa1)}
+  .step.done .num{background:linear-gradient(180deg,#48e6ab,#1f9e74); color:#04261c}
+
+  /* Cierre / atendida */
+  .closer{margin-top:24px; padding:18px; border-radius:14px;
+    background:linear-gradient(180deg, rgba(54,211,153,.12), rgba(54,211,153,.04));
+    border:1px solid rgba(54,211,153,.30); text-align:center}
+  .closer h3{color:var(--green); font-size:17px; margin-bottom:6px}
+  .closer p{font-size:14px; color:var(--ink)}
+
+  /* Botón volver al mapa */
+  .back{display:block; margin-top:24px; text-align:center; text-decoration:none;
+    padding:15px 18px; border-radius:12px; font-weight:700; font-size:15px;
+    color:#fff; background:linear-gradient(180deg,#ff3d49,#8f0c14);
+    box-shadow:0 8px 24px rgba(255,42,54,.25)}
+  .back:active{transform:scale(.98)}
+
+  /* Disclaimer 911 */
+  .disc{margin-top:22px; padding:14px 16px; border-radius:12px;
+    background:var(--accent-dim); color:#ffe7e8; font-size:13px; text-align:center; font-weight:600}
+  .disc b{color:#fff}
+
+  .foot{margin-top:26px; text-align:center; color:var(--muted); font-size:12px; font-family:var(--mono); letter-spacing:.04em}
+  .foot a{color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="head">
+    <div class="top"><span class="pulse"></span><span class="badge">Protocolo de respuesta</span></div>
+    <h1>Alguien te necesita. Esto es lo que debes hacer.</h1>
+    <p class="sub">Recibiste una alerta SOS de AEGIS con su ubicación en vivo. Tu calma y tus próximos minutos importan. Sigue estos pasos en orden.</p>
+  </div>
+
+  <div class="breathe">
+    <p><b>Primero, respira.</b> Una respiración profunda. Tu serenidad es la herramienta más útil ahora mismo: pensarás con claridad y tomarás mejores decisiones que si actúas con pánico.</p>
+  </div>
+
+  <div class="steps">
+
+    <div class="step">
+      <div class="num">1</div>
+      <div class="body">
+        <h3>Mira el mapa y ubícala</h3>
+        <p>Abre el enlace del SOS y observa el punto rojo: es su ubicación en vivo. La línea punteada muestra hacia dónde se mueve. <b>Anota o copia la dirección</b> que ves en el mapa; la vas a necesitar en el siguiente paso.</p>
+      </div>
+    </div>
+
+    <div class="step blue">
+      <div class="num">2</div>
+      <div class="body">
+        <h3>Llama tú al 911</h3>
+        <p>No esperes. <b>Marca al 911</b> y di con calma: que una persona está en una posible emergencia, su nombre y <b>la ubicación exacta del mapa</b>. Mantén la línea abierta por si te piden más datos. Tú llamas; deja que la víctima conserve su teléfono libre y discreto.</p>
+      </div>
+    </div>
+
+    <div class="step warn">
+      <div class="num">3</div>
+      <div class="body">
+        <h3>NO llames a su teléfono</h3>
+        <p>Si está siendo amenazada, <b>el timbre o la vibración pueden delatarla</b> y ponerla en más peligro. En lugar de llamar, <b>escribe un WhatsApp breve y neutro</b>, como si fuera un mensaje cualquiera: <i>"¿Todo bien? Avísame cuando puedas 🙂"</i>. Si responde, sabrás que puede hablar. Si no, no insistas con llamadas.</p>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="num">4</div>
+      <div class="body">
+        <h3>No vayas solo/a</h3>
+        <p>Si decides acercarte al lugar, <b>avisa a alguien más y ve acompañado</b>. Llegar solo a una emergencia puede convertirte en una segunda víctima. La prioridad número uno siempre es que lleguen los servicios de emergencia.</p>
+      </div>
+    </div>
+
+    <div class="step done">
+      <div class="num">5</div>
+      <div class="body">
+        <h3>Marca tu acción en el mapa</h3>
+        <p>En la página del SOS usa los botones para avisar a los demás contactos qué estás haciendo: <b>"Voy en camino"</b>, <b>"Llamé al 911"</b> y, cuando confirmes que está a salvo, <b>"Atendida"</b>. Así nadie duplica esfuerzos y todos saben que ya hay ayuda en marcha.</p>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="closer">
+    <h3>✓ Cuando sepas que está a salvo</h3>
+    <p>Vuelve al mapa y presiona <b>"Atendida"</b>. Eso le avisa a la persona y al resto de su red que la emergencia ya está controlada. Quédate en contacto hasta estar seguro de que todo está bien.</p>
+  </div>
+
+  <a class="back" href="javascript:history.length>1?history.back():location.href='/'">← Volver al mapa en vivo</a>
+
+  <div class="disc">
+    AEGIS <b>no contacta automáticamente</b> a los servicios de emergencia. En una emergencia real, <b>marca siempre al 911</b> (número nacional de emergencias en México). Si te encuentras fuera de México, llama al número de emergencias local de tu país.
+  </div>
+
+  <div class="foot">
+    AEGIS · El Arte de Proteger<br/>
+    <a href="/privacidad.html">Privacidad</a> · <a href="/terminos.html">Términos</a>
+  </div>
+
+</div>
+</body>
+</html>
