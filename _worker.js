@@ -443,3 +443,4 @@ async function sosStatus(request, env) {
   await env.AEGIS_SOS.put(key, JSON.stringify(entry), { expirationTtl: TTL });
   return json({ ok:true });
 }
+// redeploy trigger 2026-06-09T07:25:23.641Z
