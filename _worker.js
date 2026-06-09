@@ -231,8 +231,8 @@ async function sendWelcomeEmail(env, email, name){
 <!-- FOOTER -->
 <tr><td align="center" style="padding:24px 24px 40px;border-top:1px solid rgba(255,255,255,.06);">
   <p style="margin:0 0 10px;font-size:12px;line-height:1.6;color:#8f7d80;">
-    <strong style="color:#f4eaea;">AEGIS</strong> · Tu red de protección · Hecho en Querétaro, México<br>
-    Por <a href="https://elartedelproteger.com" style="color:#ff2a36;text-decoration:none;">Julián Pacheco</a>
+    <strong style="color:#f4eaea;">AEGIS</strong> · Tu red de protección<br>
+    <a href="https://elartedelproteger.com" style="color:#ff2a36;text-decoration:none;">elartedelproteger.com</a>
   </p>
   <p style="margin:8px 0 0;font-size:10px;color:#5d4f51;line-height:1.5;">⚠ AEGIS NO es servicio oficial de emergencias. En peligro inmediato, llama al 911.<br>¿No quieres más correos? Responde "baja" y te saco de la lista.</p>
 </td></tr>
