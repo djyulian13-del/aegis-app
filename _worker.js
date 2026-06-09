@@ -186,7 +186,31 @@ async function sendWelcomeEmail(env, email, name){
       <a href="https://app.elartedelproteger.com" style="display:inline-block;padding:16px 38px;color:#1a0203;text-decoration:none;font-weight:800;font-size:16px;letter-spacing:.02em;">⚡ Abrir AEGIS</a>
     </td></tr>
   </table>
-  <p style="margin:14px 0 0;font-size:12px;color:#8f7d80;">Tip: en iPhone abre la app desde Safari → compartir → "Añadir a inicio".</p>
+</td></tr>
+
+<!-- INSTALAR -->
+<tr><td style="padding:20px 24px 0;">
+  <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background:#0c131b;border:1px solid rgba(255,255,255,.08);border-radius:14px;">
+    <tr><td style="padding:18px 18px 16px;">
+      <div style="font-family:'SFMono-Regular',Menlo,Consolas,monospace;font-size:10px;letter-spacing:.32em;color:#ff2a36;text-transform:uppercase;margin-bottom:10px;">▸ Instala AEGIS en tu teléfono</div>
+      <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
+        <tr>
+          <td width="44" valign="top"><div style="width:34px;height:34px;border-radius:9px;background:rgba(0,122,255,.12);border:1px solid rgba(0,122,255,.4);text-align:center;line-height:34px;font-size:16px;color:#5ea8ff;">📱</div></td>
+          <td valign="top" style="padding:0 0 12px 12px;">
+            <div style="font-size:14px;font-weight:700;color:#f4eaea;margin-bottom:2px;">iPhone</div>
+            <div style="font-size:13px;line-height:1.5;color:#a89798;">Abre la app en <strong style="color:#f4eaea;">Safari</strong> → toca el botón compartir <span style="color:#5ea8ff;">⬆️</span> → "<strong style="color:#f4eaea;">Añadir a pantalla de inicio</strong>".</div>
+          </td>
+        </tr>
+        <tr>
+          <td width="44" valign="top"><div style="width:34px;height:34px;border-radius:9px;background:rgba(60,200,120,.12);border:1px solid rgba(60,200,120,.4);text-align:center;line-height:34px;font-size:16px;color:#7dd99f;">🤖</div></td>
+          <td valign="top" style="padding:0 0 0 12px;">
+            <div style="font-size:14px;font-weight:700;color:#f4eaea;margin-bottom:2px;">Android</div>
+            <div style="font-size:13px;line-height:1.5;color:#a89798;">Abre la app en <strong style="color:#f4eaea;">Chrome</strong> → toca el menú <strong style="color:#f4eaea;">⋮</strong> → "<strong style="color:#f4eaea;">Instalar aplicación</strong>" (o "Añadir a pantalla principal").</div>
+          </td>
+        </tr>
+      </table>
+    </td></tr>
+  </table>
 </td></tr>
 
 <!-- LO QUE SIGUE -->
@@ -229,11 +253,11 @@ async function sendWelcomeEmail(env, email, name){
 </td></tr>
 
 <!-- DISCLAIMER BOX -->
-<tr><td align="center" style="padding:0 24px 16px;">
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:rgba(255,42,54,.08);border:1px solid rgba(255,42,54,.35);border-radius:10px;">
-    <tr><td style="padding:14px 16px;">
-      <p style="margin:0;font-size:13px;line-height:1.55;color:#ffb3b8;text-align:left;">
-        <strong style="color:#ff2a36;">⚠ Importante:</strong> AEGIS <strong style="color:#fff;">NO</strong> es un servicio oficial de emergencias y <strong style="color:#fff;">NO</strong> sustituye al 911. Si tu vida está en peligro inmediato, <strong style="color:#fff;">llama primero al 911</strong>.
+<tr><td align="center" style="padding:4px 24px 16px;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#8f0c14" style="background-color:#8f0c14;border-radius:10px;">
+    <tr><td bgcolor="#8f0c14" style="background-color:#8f0c14;padding:16px 18px;border-radius:10px;">
+      <p style="margin:0;font-size:13px;line-height:1.55;color:#ffffff;text-align:left;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+        <strong style="color:#ffffff;">⚠ Importante:</strong> AEGIS <strong style="color:#ffffff;">NO</strong> es un servicio oficial de emergencias y <strong style="color:#ffffff;">NO</strong> sustituye al 911. Si tu vida está en peligro inmediato, <strong style="color:#ffffff;">llama primero al 911</strong>.
       </p>
     </td></tr>
   </table>
