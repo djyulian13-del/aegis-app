@@ -17,6 +17,7 @@ export default {
     if (path === '/api/sos/status' && request.method === 'POST') return cors(await sosStatus(request, env));
     if (path === '/api/subscribe'  && request.method === 'POST') return cors(await subscribe(request, env));
     if (path === '/api/admin/stats' && request.method === 'GET') return cors(await adminStats(request, env));
+    if (path === '/api/admin/rebuild' && request.method === 'POST') return cors(await adminRebuild(request, env));
 
     // Resto: archivos estáticos
     return env.ASSETS.fetch(request);
@@ -361,6 +362,67 @@ async function adminStats(request, env){
     subs_by_country, sos_by_country,
     recent_subs, recent_sos,
     generated_at: Date.now()
+  });
+}
+
+// Admin: recalcular stats desde KV + (opcional) borrar correos de prueba
+async function adminRebuild(request, env){
+  const url = new URL(request.url);
+  const key = url.searchParams.get('key') || request.headers.get('x-admin-key') || '';
+  if (!env.ADMIN_KEY) return json({ error:'ADMIN_KEY not configured' }, 500);
+  if (key !== env.ADMIN_KEY) return json({ error:'unauthorized' }, 401);
+
+  let body = {};
+  try { body = await request.json(); } catch (e) {}
+  const removeEmails = Array.isArray(body.removeEmails) ? body.removeEmails : [];
+
+  // borrar correos solicitados
+  for (const e of removeEmails) {
+    await env.AEGIS_SOS.delete('sub:' + String(e).toLowerCase());
+  }
+
+  // listar todos los suscriptores
+  const subs = [];
+  let cursor = undefined;
+  do {
+    const listing = await env.AEGIS_SOS.list({ prefix: 'sub:', cursor });
+    for (const k of listing.keys) {
+      const v = await env.AEGIS_SOS.get(k.name, 'json');
+      if (v && v.email) subs.push(v);
+    }
+    cursor = listing.list_complete ? undefined : listing.cursor;
+  } while (cursor);
+
+  // contar por país
+  const countries = {};
+  for (const s of subs) {
+    const c = s.country || 'XX';
+    countries[c] = (countries[c] || 0) + 1;
+  }
+
+  // contador total
+  await env.AEGIS_SOS.put('stats:subs_count', String(subs.length));
+
+  // limpiar contadores de país viejos
+  const oldCountryKeys = await env.AEGIS_SOS.list({ prefix: 'stats:country:' });
+  for (const k of oldCountryKeys.keys) await env.AEGIS_SOS.delete(k.name);
+  for (const [c, n] of Object.entries(countries)) {
+    await env.AEGIS_SOS.put('stats:country:' + c, String(n));
+  }
+
+  // recientes
+  const recent = subs
+    .filter(s => s.createdAt)
+    .sort((a,b) => (b.createdAt||0) - (a.createdAt||0))
+    .slice(0, 50)
+    .map(s => ({ email: s.email, name: s.name || '', country: s.country || 'XX', ts: s.createdAt }));
+  await env.AEGIS_SOS.put('stats:recent_subs', JSON.stringify(recent));
+
+  return json({
+    ok: true,
+    total_subs: subs.length,
+    removed: removeEmails.length,
+    countries
   });
 }
 
