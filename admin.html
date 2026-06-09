@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="robots" content="noindex,nofollow" />
+<title>AEGIS · Admin</title>
+<meta name="theme-color" content="#070405" />
+<link rel="icon" href="/icon-192.png" />
+<style>
+  :root{--bg:#070405;--ink:#f4eaea;--muted:#8f7d80;--accent:#ff2a36;--card:#0c131b;
+    --good:#7dd99f;--info:#5ea8ff;
+    --font:'Segoe UI',system-ui,-apple-system,Roboto,Helvetica,Arial,sans-serif;}
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{background:var(--bg);color:var(--ink);font-family:var(--font);min-height:100%}
+  body{padding:max(20px,env(safe-area-inset-top)) 16px max(20px,env(safe-area-inset-bottom));line-height:1.5}
+  .wrap{max-width:980px;margin:0 auto}
+  .eyebrow{font-family:'SFMono-Regular',ui-monospace,Menlo,monospace;font-size:11px;letter-spacing:.32em;color:var(--accent);text-transform:uppercase;margin-bottom:8px}
+  h1{font-size:26px;font-weight:700;margin-bottom:6px}
+  .sub{color:var(--muted);font-size:13px;margin-bottom:26px}
+
+  /* login */
+  .gate{max-width:420px;margin:60px auto 0;background:var(--card);border:1px solid rgba(255,42,54,.25);border-radius:14px;padding:24px}
+  .gate label{display:block;font-size:13px;color:var(--muted);margin-bottom:8px}
+  .gate input{width:100%;padding:13px 14px;background:#070405;color:var(--ink);border:1px solid #2a1d1f;border-radius:10px;font-size:15px;outline:none}
+  .gate input:focus{border-color:var(--accent)}
+  .gate button{width:100%;margin-top:12px;padding:13px 14px;background:linear-gradient(180deg,#ff5c5c,#ff2a36 50%,#8f0c14);border:0;border-radius:99px;color:#1a0203;font-weight:800;font-size:15px;cursor:pointer}
+  .gate .err{margin-top:10px;color:#ff8088;font-size:13px;min-height:18px}
+
+  /* cards */
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:22px}
+  .card{background:var(--card);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:18px}
+  .card .lbl{font-family:'SFMono-Regular',ui-monospace,Menlo,monospace;font-size:10px;letter-spacing:.3em;color:var(--muted);text-transform:uppercase;margin-bottom:8px}
+  .card .num{font-size:34px;font-weight:800;line-height:1;color:var(--ink)}
+  .card .num.accent{color:var(--accent)}
+  .card .num.good{color:var(--good)}
+  .card .hint{font-size:12px;color:var(--muted);margin-top:6px}
+
+  .section{margin-top:22px;background:var(--card);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:18px}
+  .section h2{font-size:15px;font-weight:700;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+  .section h2 .dot{width:8px;height:8px;border-radius:50%;background:var(--accent)}
+
+  .countries{display:flex;flex-wrap:wrap;gap:8px}
+  .pill{background:#1a0a0d;border:1px solid rgba(255,42,54,.25);padding:6px 12px;border-radius:99px;font-size:13px;color:var(--ink)}
+  .pill .c{color:var(--accent);font-weight:700;margin-left:6px}
+
+  .list{font-size:13px}
+  .list .row{display:grid;grid-template-columns:1fr 90px 80px;gap:10px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.05);align-items:center}
+  .list .row:last-child{border:0}
+  .list .row .who{font-weight:600;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .list .row .who small{display:block;color:var(--muted);font-weight:400;font-size:11px;margin-top:2px}
+  .list .row .country{color:var(--info);font-family:'SFMono-Regular',ui-monospace,Menlo,monospace;font-size:12px;text-align:center}
+  .list .row .when{color:var(--muted);font-size:11px;text-align:right}
+
+  .topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
+  .topbar .right{display:flex;gap:8px;align-items:center}
+  .btn{background:transparent;color:var(--muted);border:1px solid rgba(255,255,255,.12);padding:7px 12px;border-radius:99px;font-size:12px;cursor:pointer}
+  .btn:hover{color:var(--ink);border-color:var(--accent)}
+  .btn.danger{color:#ff8088;border-color:rgba(255,42,54,.3)}
+
+  .empty{color:var(--muted);font-size:13px;padding:14px 0;text-align:center}
+  .updated{font-size:11px;color:var(--muted);font-family:'SFMono-Regular',ui-monospace,Menlo,monospace}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<!-- LOGIN -->
+<div id="gate" class="gate">
+  <div class="eyebrow">▸ Acceso restringido</div>
+  <h1 style="font-size:20px;margin-bottom:18px;">Panel AEGIS</h1>
+  <label for="pw">Clave de admin</label>
+  <input id="pw" type="password" placeholder="••••••••" autocomplete="off" />
+  <button id="enter">Entrar</button>
+  <div id="err" class="err"></div>
+</div>
+
+<!-- DASHBOARD -->
+<div id="dash" style="display:none">
+  <div class="topbar">
+    <div>
+      <div class="eyebrow">● AEGIS · Panel</div>
+      <h1>Tu sistema en vivo</h1>
+      <div class="sub">Actualizado <span id="updated" class="updated">—</span></div>
+    </div>
+    <div class="right">
+      <button id="refresh" class="btn">↻ Recargar</button>
+      <button id="logout" class="btn danger">Salir</button>
+    </div>
+  </div>
+
+  <div class="grid">
+    <div class="card">
+      <div class="lbl">Suscriptores</div>
+      <div id="m-subs" class="num accent">—</div>
+      <div class="hint">Total acumulado</div>
+    </div>
+    <div class="card">
+      <div class="lbl">SOS activados</div>
+      <div id="m-sos" class="num">—</div>
+      <div class="hint">Sesiones únicas</div>
+    </div>
+    <div class="card">
+      <div class="lbl">Países (suscriptores)</div>
+      <div id="m-countries" class="num good">—</div>
+      <div class="hint">Distintos</div>
+    </div>
+    <div class="card">
+      <div class="lbl">Últimos 7 días</div>
+      <div id="m-recent" class="num">—</div>
+      <div class="hint">Suscriptores nuevos</div>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2><span class="dot"></span> Países top (suscriptores)</h2>
+    <div id="countries" class="countries"></div>
+  </div>
+
+  <div class="section">
+    <h2><span class="dot"></span> Suscriptores recientes</h2>
+    <div id="recent-subs" class="list"></div>
+  </div>
+
+  <div class="section">
+    <h2><span class="dot"></span> SOS recientes</h2>
+    <div id="recent-sos" class="list"></div>
+  </div>
+</div>
+
+</div>
+
+<script>
+const KEY_STORAGE = 'aegis.admin.key';
+const FLAGS = {
+  MX:'🇲🇽', US:'🇺🇸', AR:'🇦🇷', CL:'🇨🇱', CO:'🇨🇴', PE:'🇵🇪', EC:'🇪🇨',
+  ES:'🇪🇸', VE:'🇻🇪', UY:'🇺🇾', BO:'🇧🇴', PY:'🇵🇾', GT:'🇬🇹', SV:'🇸🇻',
+  HN:'🇭🇳', NI:'🇳🇮', CR:'🇨🇷', PA:'🇵🇦', DO:'🇩🇴', CU:'🇨🇺', PR:'🇵🇷',
+  BR:'🇧🇷', CA:'🇨🇦', FR:'🇫🇷', DE:'🇩🇪', GB:'🇬🇧', IT:'🇮🇹', XX:'🌐'
+};
+function flag(c){ return FLAGS[c] || '🌐'; }
+
+const gate = document.getElementById('gate');
+const dash = document.getElementById('dash');
+const pw = document.getElementById('pw');
+const err = document.getElementById('err');
+
+document.getElementById('enter').onclick = doLogin;
+pw.onkeydown = e => { if (e.key === 'Enter') doLogin(); };
+document.getElementById('logout').onclick = () => {
+  localStorage.removeItem(KEY_STORAGE);
+  location.reload();
+};
+document.getElementById('refresh').onclick = () => load(localStorage.getItem(KEY_STORAGE));
+
+async function doLogin(){
+  err.textContent = '';
+  const k = pw.value.trim();
+  if (!k) return;
+  const ok = await load(k);
+  if (ok) localStorage.setItem(KEY_STORAGE, k);
+}
+
+async function load(key){
+  if (!key) return false;
+  try {
+    const r = await fetch('/api/admin/stats?key=' + encodeURIComponent(key));
+    if (r.status === 401) { err.textContent = 'Clave incorrecta.'; return false; }
+    if (r.status === 500) { err.textContent = 'ADMIN_KEY no está configurado en el servidor.'; return false; }
+    const d = await r.json();
+    render(d);
+    gate.style.display = 'none';
+    dash.style.display = 'block';
+    return true;
+  } catch (e) {
+    err.textContent = 'Error de red.';
+    return false;
+  }
+}
+
+function render(d){
+  document.getElementById('m-subs').textContent = (d.subs_count||0).toLocaleString();
+  document.getElementById('m-sos').textContent = (d.sos_count||0).toLocaleString();
+  const countriesCount = Object.keys(d.subs_by_country||{}).length;
+  document.getElementById('m-countries').textContent = countriesCount;
+
+  // últimos 7 días
+  const now = Date.now();
+  const week = 7 * 24 * 60 * 60 * 1000;
+  const recent7 = (d.recent_subs||[]).filter(s => (now - s.ts) < week).length;
+  document.getElementById('m-recent').textContent = recent7;
+
+  // países
+  const cBox = document.getElementById('countries');
+  cBox.innerHTML = '';
+  const entries = Object.entries(d.subs_by_country||{}).sort((a,b)=>b[1]-a[1]);
+  if (entries.length === 0) {
+    cBox.innerHTML = '<div class="empty">Aún sin datos. Los países aparecen cuando alguien se registra.</div>';
+  } else {
+    entries.forEach(([code, n]) => {
+      const el = document.createElement('div');
+      el.className = 'pill';
+      el.innerHTML = flag(code) + ' ' + code + ' <span class="c">' + n + '</span>';
+      cBox.appendChild(el);
+    });
+  }
+
+  // suscriptores recientes
+  renderList('recent-subs', d.recent_subs, (s) => ({
+    main: s.email,
+    secondary: s.name || '',
+    country: flag(s.country) + ' ' + s.country,
+    when: timeAgo(s.ts)
+  }));
+
+  // SOS recientes
+  renderList('recent-sos', d.recent_sos, (s) => ({
+    main: s.user || 'Persona',
+    secondary: 'ID: ' + (s.id || ''),
+    country: flag(s.country) + ' ' + s.country,
+    when: timeAgo(s.ts)
+  }));
+
+  // updated
+  document.getElementById('updated').textContent = new Date(d.generated_at||Date.now()).toLocaleString();
+}
+
+function renderList(id, arr, mapFn){
+  const box = document.getElementById(id);
+  box.innerHTML = '';
+  if (!arr || arr.length === 0) {
+    box.innerHTML = '<div class="empty">Sin actividad todavía.</div>';
+    return;
+  }
+  arr.forEach(item => {
+    const m = mapFn(item);
+    const row = document.createElement('div');
+    row.className = 'row';
+    row.innerHTML =
+      '<div class="who">' + escape(m.main) +
+        (m.secondary ? '<small>' + escape(m.secondary) + '</small>' : '') +
+      '</div>' +
+      '<div class="country">' + m.country + '</div>' +
+      '<div class="when">' + m.when + '</div>';
+    box.appendChild(row);
+  });
+}
+
+function escape(s){
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#39;"}[c]));
+}
+
+function timeAgo(ts){
+  if (!ts) return '—';
+  const d = Date.now() - ts;
+  const m = Math.floor(d / 60000);
+  if (m < 1) return 'ahora';
+  if (m < 60) return 'hace ' + m + 'm';
+  const h = Math.floor(m / 60);
+  if (h < 24) return 'hace ' + h + 'h';
+  const dd = Math.floor(h / 24);
+  return 'hace ' + dd + 'd';
+}
+
+// Auto-login si ya hay key guardada
+const saved = localStorage.getItem(KEY_STORAGE);
+if (saved) load(saved);
+</script>
+</body>
+</html>

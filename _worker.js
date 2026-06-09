@@ -16,6 +16,7 @@ export default {
     if (path === '/api/sos/get'    && request.method === 'GET')  return cors(await sosGet(request, env));
     if (path === '/api/sos/status' && request.method === 'POST') return cors(await sosStatus(request, env));
     if (path === '/api/subscribe'  && request.method === 'POST') return cors(await subscribe(request, env));
+    if (path === '/api/admin/stats' && request.method === 'GET') return cors(await adminStats(request, env));
 
     // Resto: archivos estáticos
     return env.ASSETS.fetch(request);
@@ -41,10 +42,20 @@ async function sosUpdate(request, env) {
   }
   const key = 'sos:' + data.id;
   let entry = await env.AEGIS_SOS.get(key, 'json');
+  const isNew = !entry;
   if (!entry) {
     entry = { user: typeof data.user==='string' ? data.user.slice(0,40) : 'Persona', createdAt: Date.now(), history: [], status: [], safe: false };
   } else if (data.user && !entry.user) {
     entry.user = data.user.slice(0,40);
+  }
+  // contadores SOS (solo en el primer update por sesión)
+  if (isNew) {
+    const country = (request.cf && request.cf.country) || 'XX';
+    await incrCounter(env, 'stats:sos_count');
+    await incrCounter(env, 'stats:sos_country:' + country);
+    await pushRecent(env, 'stats:recent_sos', {
+      id: data.id, user: entry.user, country, ts: Date.now()
+    }, 50);
   }
   if (typeof data.lat === 'number' && typeof data.lng === 'number') {
     entry.history.push({ lat:data.lat, lng:data.lng, acc:Math.round(data.accuracy||0), ts:Date.now() });
@@ -78,8 +89,19 @@ async function subscribe(request, env) {
   // Si ya estaba y no piden reenvío explícito, no spammeamos
   if (existing && !data.force) return json({ ok:true, already:true });
 
+  const country = (request.cf && request.cf.country) || 'XX';
+
   // 1) Guardar respaldo local en KV (siempre)
-  await env.AEGIS_SOS.put(key, JSON.stringify({ email, name, createdAt: existing && existing.createdAt || Date.now() }));
+  await env.AEGIS_SOS.put(key, JSON.stringify({ email, name, country, createdAt: existing && existing.createdAt || Date.now() }));
+
+  // 1b) Contadores y lista de recientes (solo si es nuevo)
+  if (!existing) {
+    await incrCounter(env, 'stats:subs_count');
+    await incrCounter(env, 'stats:country:' + country);
+    await pushRecent(env, 'stats:recent_subs', {
+      email, name, country, ts: Date.now()
+    }, 50);
+  }
 
   // 2) Sincronizar con Resend (audiencia + correo de bienvenida) si hay API key
   if (env.RESEND_API_KEY) {
@@ -282,6 +304,63 @@ async function sendWelcomeEmail(env, email, name){
       subject: `🛡 Estoy contigo, ${firstName}. Tu sistema AEGIS está activo.`,
       html: html
     })
+  });
+}
+
+// ============================================================
+// STATS / ADMIN DASHBOARD
+// ============================================================
+
+async function incrCounter(env, key){
+  const cur = parseInt(await env.AEGIS_SOS.get(key) || '0', 10);
+  await env.AEGIS_SOS.put(key, String(cur + 1));
+}
+
+async function pushRecent(env, key, item, max){
+  const cur = await env.AEGIS_SOS.get(key, 'json') || [];
+  cur.unshift(item);
+  if (cur.length > max) cur.length = max;
+  await env.AEGIS_SOS.put(key, JSON.stringify(cur));
+}
+
+async function adminStats(request, env){
+  // Auth: ?key=... o header x-admin-key
+  const url = new URL(request.url);
+  const key = url.searchParams.get('key') || request.headers.get('x-admin-key') || '';
+  const expected = env.ADMIN_KEY || '';
+  if (!expected) return json({ error:'ADMIN_KEY not configured' }, 500);
+  if (key !== expected) return json({ error:'unauthorized' }, 401);
+
+  const [subs_count, sos_count, recent_subs, recent_sos] = await Promise.all([
+    env.AEGIS_SOS.get('stats:subs_count').then(v => parseInt(v||'0',10)),
+    env.AEGIS_SOS.get('stats:sos_count').then(v => parseInt(v||'0',10)),
+    env.AEGIS_SOS.get('stats:recent_subs','json').then(v => v||[]),
+    env.AEGIS_SOS.get('stats:recent_sos','json').then(v => v||[])
+  ]);
+
+  // Países: enumerar prefijos stats:country: y stats:sos_country:
+  const [subC, sosC] = await Promise.all([
+    env.AEGIS_SOS.list({ prefix: 'stats:country:' }),
+    env.AEGIS_SOS.list({ prefix: 'stats:sos_country:' })
+  ]);
+
+  async function readCountries(listing, prefix){
+    const out = {};
+    for (const k of listing.keys){
+      const code = k.name.slice(prefix.length);
+      const v = parseInt(await env.AEGIS_SOS.get(k.name) || '0', 10);
+      out[code] = v;
+    }
+    return out;
+  }
+  const subs_by_country = await readCountries(subC, 'stats:country:');
+  const sos_by_country = await readCountries(sosC, 'stats:sos_country:');
+
+  return json({
+    subs_count, sos_count,
+    subs_by_country, sos_by_country,
+    recent_subs, recent_sos,
+    generated_at: Date.now()
   });
 }
 
