@@ -75,10 +75,11 @@ async function subscribe(request, env) {
   const name = (data.name || '').toString().slice(0, 50);
   const key = 'sub:' + email;
   const existing = await env.AEGIS_SOS.get(key, 'json');
-  if (existing) return json({ ok:true, already:true });
+  // Si ya estaba y no piden reenvío explícito, no spammeamos
+  if (existing && !data.force) return json({ ok:true, already:true });
 
   // 1) Guardar respaldo local en KV (siempre)
-  await env.AEGIS_SOS.put(key, JSON.stringify({ email, name, createdAt: Date.now() }));
+  await env.AEGIS_SOS.put(key, JSON.stringify({ email, name, createdAt: existing && existing.createdAt || Date.now() }));
 
   // 2) Sincronizar con Resend (audiencia + correo de bienvenida) si hay API key
   if (env.RESEND_API_KEY) {
