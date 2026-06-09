@@ -228,13 +228,24 @@ async function sendWelcomeEmail(env, email, name){
   </table>
 </td></tr>
 
+<!-- DISCLAIMER BOX -->
+<tr><td align="center" style="padding:0 24px 16px;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:rgba(255,42,54,.08);border:1px solid rgba(255,42,54,.35);border-radius:10px;">
+    <tr><td style="padding:14px 16px;">
+      <p style="margin:0;font-size:13px;line-height:1.55;color:#ffb3b8;text-align:left;">
+        <strong style="color:#ff2a36;">⚠ Importante:</strong> AEGIS <strong style="color:#fff;">NO</strong> es un servicio oficial de emergencias y <strong style="color:#fff;">NO</strong> sustituye al 911. Si tu vida está en peligro inmediato, <strong style="color:#fff;">llama primero al 911</strong>.
+      </p>
+    </td></tr>
+  </table>
+</td></tr>
+
 <!-- FOOTER -->
-<tr><td align="center" style="padding:24px 24px 40px;border-top:1px solid rgba(255,255,255,.06);">
+<tr><td align="center" style="padding:18px 24px 40px;border-top:1px solid rgba(255,255,255,.06);">
   <p style="margin:0 0 10px;font-size:12px;line-height:1.6;color:#8f7d80;">
     <strong style="color:#f4eaea;">AEGIS</strong> · Tu red de protección<br>
     <a href="https://elartedelproteger.com" style="color:#ff2a36;text-decoration:none;">elartedelproteger.com</a>
   </p>
-  <p style="margin:8px 0 0;font-size:10px;color:#5d4f51;line-height:1.5;">⚠ AEGIS NO es servicio oficial de emergencias. En peligro inmediato, llama al 911.<br>¿No quieres más correos? Responde "baja" y te saco de la lista.</p>
+  <p style="margin:10px 0 0;font-size:11px;color:#8f7d80;line-height:1.5;">¿No quieres más correos? Responde "baja" y te saco de la lista.</p>
 </td></tr>
 
 </table></td></tr></table></body></html>`;
