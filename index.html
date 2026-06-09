@@ -75,6 +75,7 @@
     animation:sosPulse 2.2s ease-in-out infinite;
   }
   .sos-btn:active{animation:none; transform:scale(.97)}
+  @keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
   @keyframes sosPulse{
     0%,100%{box-shadow:0 0 0 8px rgba(255,42,54,.15), 0 0 60px -10px var(--accent), inset 0 -8px 30px rgba(0,0,0,.3)}
     50%{box-shadow:0 0 0 16px rgba(255,42,54,.08), 0 0 90px -10px var(--accent), inset 0 -8px 30px rgba(0,0,0,.3)}
@@ -109,6 +110,9 @@
   .contact-send .send{appearance:none; border:none; padding:10px 14px; border-radius:10px; font-weight:700; font-size:13px;
     background:linear-gradient(180deg,#48e6ab,#1f9e74); color:#04261c; cursor:pointer; flex-shrink:0}
   .contact-send.sent .send{background:#1a2a2a; color:#7da89d}
+  .contact-send .actions{display:flex; gap:6px; flex-shrink:0}
+  .contact-send .callbtn{display:inline-flex; align-items:center; justify-content:center; width:42px; height:38px; border-radius:10px; background:#1a0608; color:var(--ink); border:1px solid rgba(255,42,54,.4); text-decoration:none; font-size:16px; cursor:pointer}
+  .contact-send .callbtn:active{transform:scale(.96); filter:brightness(.95)}
   .protocol{background:rgba(255,42,54,.08); border:1px solid rgba(255,42,54,.3); border-radius:12px; padding:14px 16px; margin-top:14px}
   .protocol h4{font-size:14px; font-weight:700; color:var(--accent); margin-bottom:8px; letter-spacing:.04em; text-transform:uppercase}
   .protocol p{font-size:15px; line-height:1.55; color:var(--ink)}
@@ -173,12 +177,25 @@
 
 <section class="screen" id="onb-contacts">
   <div class="head"><div class="back" data-go="onb-name">←</div></div>
-  <div class="eyebrow">Paso 2 de 2</div>
+  <div class="eyebrow">Paso 2 de 3</div>
   <h1 style="margin-top:8px">Tu círculo de confianza</h1>
   <p class="lead">Agrega <b>al menos 2</b> personas a las que AEGIS avisará por WhatsApp en una emergencia. Familia, pareja, amistades cercanas.</p>
   <div id="onbContactList" style="margin-top:18px"></div>
   <button class="btn ghost" id="onbAddContact" style="margin-top:10px">＋ Agregar contacto</button>
-  <div style="margin-top:auto"><button class="btn" id="onbFinish" disabled style="opacity:.5">Activar AEGIS</button></div>
+  <div style="margin-top:auto"><button class="btn" id="onbFinish" disabled style="opacity:.5">Continuar →</button></div>
+</section>
+
+<section class="screen" id="onb-email">
+  <div class="head"><div class="back" data-go="onb-contacts">←</div></div>
+  <div class="eyebrow">Paso 3 de 3 · opcional</div>
+  <h1 style="margin-top:8px">Un tip de seguridad cada semana</h1>
+  <p class="lead">Si nos dejas tu correo, te mandamos una nota corta semanal con un consejo de seguridad real. Cero spam. Cancelas cuando quieras.</p>
+  <div style="margin-top:20px"><input class="input" id="emailInput" type="email" inputmode="email" autocomplete="email" placeholder="tu@correo.com (opcional)" /></div>
+  <p style="font-size:11px;color:var(--muted);margin-top:12px;line-height:1.5">Al continuar aceptas los <a href="/terminos.html" target="_blank" style="color:var(--accent);text-decoration:underline">Términos de Uso</a> y el <a href="/privacidad.html" target="_blank" style="color:var(--accent);text-decoration:underline">Aviso de Privacidad</a>. Tu correo solo se usa para enviarte tips y avisos importantes de AEGIS.</p>
+  <div style="margin-top:auto" class="stack">
+    <button class="btn" id="onbEmailFinish">⚡ Activar AEGIS</button>
+    <button class="btn ghost" id="onbEmailSkip">Activar sin suscribirme</button>
+  </div>
 </section>
 
 <!-- ========== HOME ========== -->
@@ -319,7 +336,7 @@
   </div>
   <button class="btn dark" data-go="circulo" style="margin-top:14px">Gestionar círculo de confianza</button>
   <button class="btn ghost" id="setReset" style="margin-top:14px">Restablecer AEGIS (borrar todo)</button>
-  <div class="footer-note">AEGIS guarda tu información solo en este dispositivo. No es servicio oficial de emergencias.</div>
+  <div class="footer-note" style="line-height:1.7">AEGIS guarda tu información solo en este dispositivo. No es servicio oficial de emergencias.<br><br><a href="/privacidad.html" target="_blank" style="color:var(--accent);text-decoration:underline">Aviso de Privacidad</a> · <a href="/terminos.html" target="_blank" style="color:var(--accent);text-decoration:underline">Términos de Uso</a></div>
 </section>
 
 <!-- ========== MODAL: AGREGAR CONTACTO ========== -->
@@ -414,7 +431,21 @@ function updateOnbFinish(){
   b.disabled=!ok; b.style.opacity=ok?'1':'.5';
 }
 $('#onbAddContact').addEventListener('click', function(){ openAddContact('onb-contacts'); });
-$('#onbFinish').addEventListener('click', function(){ enterHome(); });
+$('#onbFinish').addEventListener('click', function(){ show('onb-email'); setTimeout(function(){ var e=document.getElementById('emailInput'); if(e) e.focus(); }, 200); });
+$('#onbEmailSkip').addEventListener('click', function(){ enterHome(); });
+$('#onbEmailFinish').addEventListener('click', function(){
+  var em=($('#emailInput').value||'').trim().toLowerCase();
+  if(em && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em)){
+    save('aegis.email', em);
+    try{
+      fetch('/api/subscribe', {
+        method:'POST', headers:{'content-type':'application/json'},
+        body: JSON.stringify({ email: em, name: user.name })
+      }).catch(function(){});
+    }catch(e){}
+  }
+  enterHome();
+});
 
 function enterHome(){
   $('#homeName').textContent='Hola, '+user.name;
@@ -658,10 +689,34 @@ function showSafePrompt(who){
 }
 
 /* ===================== HOME · SOS ===================== */
+/* Disclaimer legal antes del primer SOS */
+var disclaimerAccepted = load('aegis.disclaimerAccepted', false);
+function showFirstSosDisclaimer(onAccept){
+  if(disclaimerAccepted){ onAccept(); return; }
+  var m=document.createElement('div');
+  m.id='aegisDisclaimer';
+  m.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.9);z-index:9999;display:flex;align-items:center;justify-content:center;padding:24px;animation:fadeIn .3s';
+  m.innerHTML='<div style="background:#0c131b;border:1px solid rgba(255,42,54,.4);border-radius:14px;padding:22px;max-width:420px;width:100%">'+
+    '<div style="font-size:32px;text-align:center;margin-bottom:10px">⚠️</div>'+
+    '<h2 style="font-size:18px;font-weight:700;margin-bottom:12px;text-align:center;color:var(--ink)">Antes de activar SOS</h2>'+
+    '<p style="font-size:14px;line-height:1.6;color:var(--muted);margin-bottom:10px"><b style="color:var(--ink)">AEGIS NO es servicio oficial de emergencias.</b> Si tu vida está en peligro inmediato, llama al <b style="color:var(--accent)">911</b> ahora.</p>'+
+    '<p style="font-size:14px;line-height:1.6;color:var(--muted);margin-bottom:10px">AEGIS depende de tu internet, GPS, WhatsApp y de que tu círculo responda. Estas cosas pueden fallar y AEGIS no garantiza que el aviso llegue.</p>'+
+    '<p style="font-size:13px;line-height:1.6;color:var(--muted);margin-bottom:16px">Al continuar aceptas los <a href="/terminos.html" target="_blank" style="color:var(--accent);text-decoration:underline">Términos de Uso</a> y el <a href="/privacidad.html" target="_blank" style="color:var(--accent);text-decoration:underline">Aviso de Privacidad</a>.</p>'+
+    '<button class="btn" id="discBtn" style="width:100%">Entendido, activar SOS</button>'+
+    '<button class="btn ghost" id="discCancel" style="width:100%;margin-top:8px">Cancelar</button>'+
+  '</div>';
+  document.body.appendChild(m);
+  document.getElementById('discBtn').addEventListener('click', function(){
+    disclaimerAccepted=true; save('aegis.disclaimerAccepted', true);
+    m.remove(); onAccept();
+  });
+  document.getElementById('discCancel').addEventListener('click', function(){ m.remove(); });
+}
+
 $('#sosBtn').addEventListener('click', function(){
   if(contacts.length<1){ alert('Primero agrega al menos un contacto en tu círculo.'); show('circulo'); renderCirculo(); return; }
   audio(); // desbloquea audio para la alarma (debe ser dentro del gesto)
-  startSosCountdown();
+  showFirstSosDisclaimer(function(){ startSosCountdown(); });
 });
 
 var cdInterval=null, cdLeft=3;
@@ -707,7 +762,10 @@ function renderSosContacts(){
     var row=document.createElement('div'); row.className='contact-send'; row.dataset.id=c.id;
     row.innerHTML='<div class="avatar">'+initials(c.name)+'</div>'+
       '<div class="info"><div class="n">'+escapeHtml(c.name)+'</div><div class="p">+'+c.phone+'</div></div>'+
-      '<button class="send">Enviar</button>';
+      '<div class="actions">'+
+        '<a class="callbtn" href="tel:+'+c.phone+'" title="Llamar a '+escapeHtml(c.name)+'">📞</a>'+
+        '<button class="send">💬 Enviar</button>'+
+      '</div>';
     row.querySelector('.send').addEventListener('click', function(){
       var track = trackingUrl();
       var msg = '🚨 EMERGENCIA · '+user.name+' necesita ayuda.';

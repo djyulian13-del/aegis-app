@@ -15,6 +15,7 @@ export default {
     if (path === '/api/sos/update' && request.method === 'POST') return cors(await sosUpdate(request, env));
     if (path === '/api/sos/get'    && request.method === 'GET')  return cors(await sosGet(request, env));
     if (path === '/api/sos/status' && request.method === 'POST') return cors(await sosStatus(request, env));
+    if (path === '/api/subscribe'  && request.method === 'POST') return cors(await subscribe(request, env));
 
     // Resto: archivos estáticos
     return env.ASSETS.fetch(request);
@@ -62,6 +63,21 @@ async function sosGet(request, env) {
   const entry = await env.AEGIS_SOS.get('sos:' + id, 'json');
   if (!entry) return json({ notFound:true });
   return json(entry);
+}
+
+async function subscribe(request, env) {
+  let data;
+  try { data = await request.json(); } catch (e) { return json({ ok:false }, 400); }
+  if (!data || typeof data.email !== 'string' || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) {
+    return json({ ok:false, error:'bad email' }, 400);
+  }
+  const email = data.email.toLowerCase().slice(0, 120);
+  const name = (data.name || '').toString().slice(0, 50);
+  const key = 'sub:' + email;
+  const existing = await env.AEGIS_SOS.get(key, 'json');
+  if (existing) return json({ ok:true, already:true });
+  await env.AEGIS_SOS.put(key, JSON.stringify({ email, name, createdAt: Date.now() }));
+  return json({ ok:true });
 }
 
 async function sosStatus(request, env) {
