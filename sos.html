@@ -32,7 +32,23 @@
   .head .meta{font-size:12px; color:var(--muted); margin-top:4px; font-family:var(--mono)}
   .safe-banner{background:linear-gradient(180deg,#1f9e74,#0d4e3b); color:#04261c; padding:14px 18px; font-weight:700; text-align:center; display:none}
   .safe-banner.on{display:block}
-  #map{flex:1; min-height:200px; background:#0a0a0a; filter:saturate(.85)}
+
+  /* Banner protocolo de respuesta para el contacto */
+  .guide{flex-shrink:0; background:linear-gradient(180deg,#170206,#0c0203); border-bottom:1px solid rgba(255,42,54,.22)}
+  .guide summary{list-style:none; cursor:pointer; padding:11px 18px; display:flex; align-items:center; gap:9px;
+    font-size:13px; font-weight:700; color:#ff7a82; user-select:none}
+  .guide summary::-webkit-details-marker{display:none}
+  .guide summary .chev{margin-left:auto; color:var(--muted); font-size:11px; transition:transform .2s; font-family:var(--mono)}
+  .guide[open] summary .chev{transform:rotate(180deg)}
+  .guide .gbody{padding:0 18px 13px}
+  .guide ol{margin:0; padding:0; list-style:none; display:flex; flex-direction:column; gap:8px}
+  .guide li{font-size:12.5px; color:var(--muted); padding-left:23px; position:relative; line-height:1.4}
+  .guide li b{color:var(--ink)}
+  .guide li .ic{position:absolute; left:0; top:0; font-size:13px}
+  .guide .more{display:inline-block; margin-top:11px; font-size:12.5px; font-weight:700; color:#fff;
+    text-decoration:none; background:linear-gradient(180deg,#ff3d49,#8f0c14); padding:8px 13px; border-radius:9px}
+  .guide .more:active{transform:scale(.98)}
+  #map{flex:1; min-height:160px; background:#0a0a0a; filter:saturate(.85)}
   .actions{padding:12px 14px calc(14px + var(--safe-bot)); background:linear-gradient(0deg,#0a0203,#120607); border-top:1px solid rgba(255,255,255,.06); flex-shrink:0}
   .actions .who{margin-bottom:10px}
   .actions .who input{width:100%; padding:11px 14px; background:rgba(255,255,255,.04); color:var(--ink);
@@ -70,6 +86,19 @@
     <div class="meta" id="meta">—</div>
   </div>
   <div class="safe-banner" id="safe">✓ Ya está a salvo — la persona marcó que está bien.</div>
+  <details class="guide" id="guide" open>
+    <summary>&#9888;&#65039; Recibiste este SOS &#8212; qu&#233; hacer ahora <span class="chev">&#9660;</span></summary>
+    <div class="gbody">
+      <ol>
+        <li><span class="ic">&#128222;</span><b>Llama t&#250; al 911</b> y dales la ubicaci&#243;n que ves en el mapa. No esperes.</li>
+        <li><span class="ic">&#129323;</span><b>NO llames a su tel&#233;fono:</b> el timbre puede delatarla. Mejor escr&#237;bele un WhatsApp neutro: <i>"&#191;Todo bien? Av&#237;same &#128578;"</i>.</li>
+        <li><span class="ic">&#128101;</span><b>No vayas solo/a.</b> Si te acercas, avisa a alguien y ve acompa&#241;ado.</li>
+        <li><span class="ic">&#10003;</span>Marca <b>"Atendida"</b> abajo cuando sepas que est&#225; a salvo.</li>
+      </ol>
+      <a class="more" href="/como-responder.html">Ver protocolo completo &#8594;</a>
+    </div>
+  </details>
+
   <div id="map"></div>
   <div class="updates" id="updates" style="display:none"></div>
   <div class="actions">
@@ -110,6 +139,7 @@
     if (!history || !history.length) return;
     var last = history[history.length-1];
     ensureMap(last.lat, last.lng);
+    if (map) setTimeout(function(){ map.invalidateSize(); }, 0);
     var pts = history.map(function(p){ return [p.lat, p.lng]; });
     trail.setLatLngs(pts);
     marker.setLatLng([last.lat, last.lng]);
@@ -166,6 +196,10 @@
   }
   poll();
   setInterval(poll, 6000);
+
+  // Recalcular tamano del mapa cuando el banner se abre/cierra
+  var guideEl = document.getElementById('guide');
+  if (guideEl) guideEl.addEventListener('toggle', function(){ if (map) setTimeout(function(){ map.invalidateSize(); }, 50); });
 
   // Acciones del contacto
   function toast(text){
