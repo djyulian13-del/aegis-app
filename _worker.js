@@ -15,12 +15,19 @@ export default {
     if (path === '/api/sos/update' && request.method === 'POST') return cors(await sosUpdate(request, env));
     if (path === '/api/sos/get'    && request.method === 'GET')  return cors(await sosGet(request, env));
     if (path === '/api/sos/status' && request.method === 'POST') return cors(await sosStatus(request, env));
+    if (path === '/api/acomp/start'   && request.method === 'POST') return cors(await acompStart(request, env));
+    if (path === '/api/acomp/ping'    && request.method === 'POST') return cors(await acompPing(request, env));
+    if (path === '/api/acomp/extend'  && request.method === 'POST') return cors(await acompExtend(request, env));
+    if (path === '/api/acomp/checkin' && request.method === 'POST') return cors(await acompCheckin(request, env));
     if (path === '/api/subscribe'  && request.method === 'POST') return cors(await subscribe(request, env));
     if (path === '/api/admin/stats' && request.method === 'GET') return cors(await adminStats(request, env));
     if (path === '/api/admin/rebuild' && request.method === 'POST') return cors(await adminRebuild(request, env));
 
     // Resto: archivos estáticos
     return env.ASSETS.fetch(request);
+  },
+  async scheduled(event, env, ctx) {
+    ctx.waitUntil(acompSweep(env));
   }
 };
 
@@ -423,6 +430,115 @@ async function adminRebuild(request, env){
     total_subs: subs.length,
     removed: removeEmails.length,
     countries
+  });
+}
+
+// ============================================================
+// ACOMPANAME (check-in con alerta server-side via cron)
+// ============================================================
+const ACOMP_TTL = 12 * 60 * 60;
+function acompRid(){ return Math.random().toString(36).slice(2,10) + Date.now().toString(36).slice(-4); }
+function escapeHtmlW(s){ return (s||'').toString().replace(/[&<>"]/g, function(ch){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[ch]; }); }
+
+async function acompStart(request, env){
+  let d; try { d = await request.json(); } catch(e){ return json({ ok:false, error:'bad json' }, 400); }
+  if (!d) return json({ ok:false }, 400);
+  const mins = Math.max(1, Math.min(720, parseInt(d.mins,10) || 15));
+  const now = Date.now();
+  const id = acompRid();
+  const e = {
+    id: id,
+    name: (d.name||'Alguien').toString().slice(0,40),
+    dest: (d.dest||'su destino').toString().slice(0,60),
+    mins: mins,
+    contactName: (d.contactName||'tu contacto').toString().slice(0,40),
+    contactPhone: (d.contactPhone||'').toString().replace(/[^0-9]/g,'').slice(0,20),
+    contactEmail: (d.contactEmail||'').toString().slice(0,120),
+    userEmail: (d.userEmail||'').toString().slice(0,120),
+    lat: (typeof d.lat==='number') ? d.lat : null,
+    lng: (typeof d.lng==='number') ? d.lng : null,
+    startedAt: now,
+    until: now + mins*60000,
+    active: true,
+    alerted: false
+  };
+  await env.AEGIS_SOS.put('acomp:'+id, JSON.stringify(e), { expirationTtl: ACOMP_TTL });
+  return json({ ok:true, id: id });
+}
+async function acompGet(env, id){
+  if (!id || typeof id !== 'string') return null;
+  return await env.AEGIS_SOS.get('acomp:'+id.slice(0,40), 'json');
+}
+async function acompPing(request, env){
+  let d; try { d = await request.json(); } catch(e){ return json({ ok:false }, 400); }
+  const e = await acompGet(env, d && d.id);
+  if (!e || !e.active) return json({ ok:true, inactive:true });
+  if (typeof d.lat==='number') e.lat = d.lat;
+  if (typeof d.lng==='number') e.lng = d.lng;
+  await env.AEGIS_SOS.put('acomp:'+e.id, JSON.stringify(e), { expirationTtl: ACOMP_TTL });
+  return json({ ok:true });
+}
+async function acompExtend(request, env){
+  let d; try { d = await request.json(); } catch(e){ return json({ ok:false }, 400); }
+  const e = await acompGet(env, d && d.id);
+  if (!e || !e.active) return json({ ok:true, inactive:true });
+  const add = Math.max(1, Math.min(180, parseInt(d.mins,10) || 15));
+  e.until += add*60000; e.mins += add; e.alerted = false;
+  await env.AEGIS_SOS.put('acomp:'+e.id, JSON.stringify(e), { expirationTtl: ACOMP_TTL });
+  return json({ ok:true, until:e.until });
+}
+async function acompCheckin(request, env){
+  let d; try { d = await request.json(); } catch(e){ return json({ ok:false }, 400); }
+  const e = await acompGet(env, d && d.id);
+  if (!e) return json({ ok:true, notFound:true });
+  e.active = false; e.arrived = !(d && d.cancelled);
+  await env.AEGIS_SOS.put('acomp:'+e.id, JSON.stringify(e), { expirationTtl: 6*60*60 });
+  return json({ ok:true });
+}
+async function acompSweep(env){
+  const now = Date.now();
+  let cursor;
+  do {
+    const listing = await env.AEGIS_SOS.list({ prefix:'acomp:', cursor: cursor });
+    for (const k of listing.keys){
+      const e = await env.AEGIS_SOS.get(k.name, 'json');
+      if (e && e.active && !e.alerted && now >= e.until){
+        try { await sendAcompAlert(env, e); } catch(err){}
+        e.alerted = true; e.active = false;
+        await env.AEGIS_SOS.put(k.name, JSON.stringify(e), { expirationTtl: 6*60*60 });
+      }
+    }
+    cursor = listing.list_complete ? undefined : listing.cursor;
+  } while (cursor);
+}
+async function sendAcompAlert(env, e){
+  if (!env.RESEND_API_KEY) return;
+  const to = [];
+  if (e.contactEmail) to.push(e.contactEmail);
+  if (e.userEmail && to.indexOf(e.userEmail) < 0) to.push(e.userEmail);
+  if (!to.length) return;
+  const fromAddr = env.RESEND_FROM || 'AEGIS <aegis@elartedelproteger.com>';
+  const hasLoc = (e.lat!=null && e.lng!=null);
+  const mapUrl = hasLoc ? ('https://www.google.com/maps?q='+e.lat+','+e.lng) : '';
+  const waUrl = e.contactPhone ? ('https://wa.me/'+e.contactPhone) : '';
+  const hora = new Date(e.until).toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'});
+  const name = escapeHtmlW(e.name); const dest = escapeHtmlW(e.dest);
+  const html = '<!doctype html><html lang="es"><body style="margin:0;background:#070405;font-family:-apple-system,Segoe UI,Roboto,Arial,sans-serif;color:#f4eaea">' +
+    '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#070405"><tr><td align="center" style="padding:30px 16px">' +
+    '<table role="presentation" width="100%" style="max-width:560px">' +
+    '<tr><td style="background:#8f0c14;border-radius:12px 12px 0 0;padding:18px 22px"><div style="font-size:12px;letter-spacing:.2em;color:#ffd7da">&#9888;&#65039; ALERTA AEGIS</div><div style="font-size:22px;font-weight:800;color:#fff;margin-top:6px">' + name + ' no confirm&#243; que lleg&#243;</div></td></tr>' +
+    '<tr><td style="background:#0c131b;padding:22px;border:1px solid rgba(255,42,54,.25);border-top:none">' +
+    '<p style="margin:0 0 14px;font-size:15px;line-height:1.6;color:#e4d8da">' + name + ' activ&#243; <b>Acomp&#225;&#241;ame</b> en AEGIS rumbo a <b>' + dest + '</b> y deb&#237;a confirmar su llegada antes de las <b>' + hora + '</b>. No lo hizo. Por favor, <b>verifica que est&#233; bien.</b></p>' +
+    (hasLoc ? '<p style="margin:0 0 8px;font-size:13px;color:#8f7d80">&#128205; &Uacute;ltima ubicaci&#243;n conocida:</p><a href="' + mapUrl + '" style="display:inline-block;background:#1a4fa1;color:#fff;text-decoration:none;padding:11px 16px;border-radius:9px;font-weight:700;font-size:14px;margin-bottom:14px">Ver en el mapa</a><br>' : '<p style="margin:0 0 14px;font-size:13px;color:#8f7d80">No hay ubicaci&#243;n registrada en esta sesi&#243;n.</p>') +
+    (waUrl ? '<a href="' + waUrl + '" style="display:inline-block;background:#1f9e74;color:#fff;text-decoration:none;padding:11px 16px;border-radius:9px;font-weight:700;font-size:14px">Escribirle por WhatsApp</a>' : '') +
+    '<table role="presentation" width="100%" style="background:rgba(255,42,54,.07);border-left:3px solid #ff2a36;border-radius:6px;margin-top:18px"><tr><td style="padding:12px 14px;font-size:13px;line-height:1.5;color:#ffb3b8"><b>Qu&#233; hacer:</b> respira, intenta contactarle, y si no responde o algo se siente mal, <b>llama al 911</b> con su ubicaci&#243;n. No vayas solo/a.</td></tr></table>' +
+    '</td></tr>' +
+    '<tr><td style="background:#0c131b;border-radius:0 0 12px 12px;border:1px solid rgba(255,42,54,.25);border-top:none;padding:14px 22px;text-align:center"><span style="font-size:11px;color:#8f7d80">AEGIS &middot; El Arte de Proteger &middot; no sustituye a los servicios de emergencia oficiales</span></td></tr>' +
+    '</table></td></tr></table></body></html>';
+  await fetch('https://api.resend.com/emails', {
+    method:'POST',
+    headers:{'Authorization':'Bearer '+env.RESEND_API_KEY,'Content-Type':'application/json'},
+    body: JSON.stringify({ from: fromAddr, to: to, subject: '\uD83D\uDEA8 ALERTA AEGIS: '+e.name+' no confirmo llegada', html: html })
   });
 }
 
