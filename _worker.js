@@ -158,7 +158,7 @@ async function getOrCreateAudience(env){
 
 async function sendWelcomeEmail(env, email, name){
   const firstName = (name || 'amig@').toString().split(/\s+/)[0] || 'amig@';
-  const fromAddr = env.RESEND_FROM || 'AEGIS <onboarding@resend.dev>';
+  const fromAddr = env.RESEND_FROM || 'AEGIS <aegis@elartedelproteger.com>';
   const html = `<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>AEGIS · Sistema activado</title></head>
 <body style="margin:0;padding:0;background:#070405;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#f4eaea;">
 <div style="display:none;max-height:0;overflow:hidden;color:#070405;">${firstName}, tu sistema AEGIS está activo. Aquí va tu primer protocolo de seguridad y lo que sigue.</div>
@@ -443,4 +443,3 @@ async function sosStatus(request, env) {
   await env.AEGIS_SOS.put(key, JSON.stringify(entry), { expirationTtl: TTL });
   return json({ ok:true });
 }
-// redeploy trigger 2026-06-09T07:25:23.641Z
