@@ -956,11 +956,11 @@ function triggerAcompAlert(){
   if(acompTickIv){ clearInterval(acompTickIv); acompTickIv=null; }
   var msg='🚨 ALERTA · '+user.name+' no confirmó llegada a '+acomp.dest+' (se le acabó el tiempo programado en AEGIS). Por favor verifica si está bien.';
   var url='https://wa.me/'+acomp.contactPhone+'?text='+encodeURIComponent(msg);
-  speak('Atención. El tiempo se acabó y aún no marcas que llegaste. Voy a abrir el aviso para tu contacto.');
+  speak('Se acabó el tiempo. Ya estoy avisando a tu contacto por correo.');
   vibrate([300,100,300,100,300]);
   stopAcompWatch();
   // Abrir WhatsApp (requiere que la app esté abierta + el usuario lo confirme)
-  if(confirm('Se acabó el tiempo y aún no marcaste que llegaste. ¿Abrimos WhatsApp para alertar a '+acomp.contactName+'?')){
+  if(confirm('Se acabó el tiempo. Ya estoy avisando a '+acomp.contactName+' por correo. ¿Quieres abrir WhatsApp también para escribirle?')){
     window.open(url,'_blank');
   }
   acomp.active=false; save(LS.acomp, acomp);
