@@ -280,6 +280,9 @@
 
   <div class="eyebrow" style="margin-top:20px">¿A quién avisamos?</div>
   <div id="acompContactPick" style="margin-top:8px"></div>
+  <div class="eyebrow" style="margin-top:20px">Correo del contacto (opcional, recomendado)</div>
+  <input class="input" id="acompContactEmail" type="email" placeholder="correo@contacto.com" style="margin-top:8px" />
+  <p class="lead" style="font-size:12px;margin-top:6px;color:var(--muted)">Si lo agregas, AEGIS le manda la alerta por correo aunque tu tel&#233;fono est&#233; apagado.</p>
 
   <div style="margin-top:20px"><button class="btn" id="acompStart" disabled style="opacity:.5">Empezar acompañamiento</button></div>
 </section>
@@ -891,6 +894,8 @@ $('#acompStart').addEventListener('click', function(){
   var contact=contacts.find(function(c){ return c.id===acompDraft.contactId; });
   var until=Date.now()+acompDraft.mins*60000;
   acomp={ active:true, dest:acompDraft.dest, mins:acompDraft.mins, contactId:contact.id, contactName:contact.name, contactPhone:contact.phone, startedAt:Date.now(), until:until };
+  var __cem=$('#acompContactEmail'); acomp.contactEmail=(__cem&&__cem.value||'').trim();
+  startAcompWatch(); acompServerStart();
   save(LS.acomp, acomp);
   // Notificar al contacto de inicio
   var msg='👋 Hola, soy AEGIS. '+user.name+' va saliendo hacia '+acomp.dest+' y me pidió avisarte. Llegada estimada: '+new Date(until).toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'})+'. Si no marca que llegó, te aviso de nuevo.';
@@ -898,6 +903,33 @@ $('#acompStart').addEventListener('click', function(){
   resumeAcompActive();
 });
 
+var acompWatchId=null, acompLastPos=null, acompPingIv=null;
+function acompServerStart(){
+  if(!acomp) return;
+  try{ fetch('/api/acomp/start', { method:'POST', headers:{'content-type':'application/json'}, body: JSON.stringify({ name:user.name, dest:acomp.dest, mins:acomp.mins, contactName:acomp.contactName, contactPhone:acomp.contactPhone, contactEmail:acomp.contactEmail||'', userEmail: userEmail||'', lat: acompLastPos?acompLastPos.lat:null, lng: acompLastPos?acompLastPos.lng:null }) }).then(function(r){ return r.json(); }).then(function(d){ if(d && d.id){ acomp.serverId=d.id; save(LS.acomp, acomp); acompPingNow(); } }).catch(function(){}); }catch(e){}
+}
+function acompPingNow(){
+  if(!acomp || !acomp.serverId || !acompLastPos) return;
+  try{ fetch('/api/acomp/ping', { method:'POST', headers:{'content-type':'application/json'}, body: JSON.stringify({ id:acomp.serverId, lat:acompLastPos.lat, lng:acompLastPos.lng }) }).catch(function(){}); }catch(e){}
+}
+function startAcompWatch(){
+  if(navigator.geolocation){ try{ acompWatchId=navigator.geolocation.watchPosition(function(pos){ acompLastPos={ lat:pos.coords.latitude, lng:pos.coords.longitude }; acompPingNow(); }, function(){}, {enableHighAccuracy:true, timeout:15000, maximumAge:5000}); }catch(e){} }
+  if(acompPingIv) clearInterval(acompPingIv);
+  acompPingIv=setInterval(acompPingNow, 30000);
+}
+function stopAcompWatch(){
+  if(acompWatchId!=null){ try{ navigator.geolocation.clearWatch(acompWatchId); }catch(e){} acompWatchId=null; }
+  if(acompPingIv){ clearInterval(acompPingIv); acompPingIv=null; }
+  acompLastPos=null;
+}
+function acompServerCheckin(cancelled){
+  if(!acomp || !acomp.serverId) return;
+  try{ fetch('/api/acomp/checkin', { method:'POST', headers:{'content-type':'application/json'}, body: JSON.stringify({ id:acomp.serverId, cancelled:!!cancelled }) }).catch(function(){}); }catch(e){}
+}
+function acompServerExtend(mins){
+  if(!acomp || !acomp.serverId) return;
+  try{ fetch('/api/acomp/extend', { method:'POST', headers:{'content-type':'application/json'}, body: JSON.stringify({ id:acomp.serverId, mins:mins }) }).catch(function(){}); }catch(e){}
+}
 var acompTickIv=null;
 function resumeAcompActive(){
   show('acompActive');
@@ -924,6 +956,7 @@ function triggerAcompAlert(){
   var url='https://wa.me/'+acomp.contactPhone+'?text='+encodeURIComponent(msg);
   speak('Atención. El tiempo se acabó y aún no marcas que llegaste. Voy a abrir el aviso para tu contacto.');
   vibrate([300,100,300,100,300]);
+  stopAcompWatch();
   // Abrir WhatsApp (requiere que la app esté abierta + el usuario lo confirme)
   if(confirm('Se acabó el tiempo y aún no marcaste que llegaste. ¿Abrimos WhatsApp para alertar a '+acomp.contactName+'?')){
     window.open(url,'_blank');
@@ -931,6 +964,7 @@ function triggerAcompAlert(){
   acomp.active=false; save(LS.acomp, acomp);
 }
 $('#acompArrived').addEventListener('click', function(){
+  acompServerCheckin(false); stopAcompWatch();
   if(!acomp) return;
   var contact=contacts.find(function(c){ return c.id===acomp.contactId; });
   acomp.active=false; save(LS.acomp, acomp);
@@ -944,10 +978,12 @@ $('#acompArrived').addEventListener('click', function(){
 $('#acompExtend').addEventListener('click', function(){
   if(!acomp) return;
   acomp.until += 15*60000; acomp.mins += 15; save(LS.acomp, acomp);
+  acompServerExtend(15);
   tickAcomp();
 });
 $('#acompCancel').addEventListener('click', function(){
   if(!confirm('¿Cancelar acompañamiento? Tu contacto no recibirá la alerta.')) return;
+  acompServerCheckin(true); stopAcompWatch();
   acomp=null; save(LS.acomp, null);
   if(acompTickIv){ clearInterval(acompTickIv); acompTickIv=null; }
   show('home');
