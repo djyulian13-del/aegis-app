@@ -383,6 +383,14 @@ async function adminRebuild(request, env){
   try { body = await request.json(); } catch (e) {}
   const removeEmails = Array.isArray(body.removeEmails) ? body.removeEmails : [];
 
+  // Reset opcional de contadores de SOS de prueba
+  if (body.resetSos) {
+    await env.AEGIS_SOS.put('stats:sos_count', '0');
+    await env.AEGIS_SOS.put('stats:recent_sos', JSON.stringify([]));
+    const scs = await env.AEGIS_SOS.list({ prefix: 'stats:sos_country:' });
+    for (const k of scs.keys) await env.AEGIS_SOS.delete(k.name);
+  }
+
   // borrar correos solicitados
   for (const e of removeEmails) {
     await env.AEGIS_SOS.delete('sub:' + String(e).toLowerCase());
