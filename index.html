@@ -203,7 +203,7 @@
   </div>
   <div class="sos-wrap">
     <button class="sos-btn" id="sosBtn">SOS</button>
-    <div class="sos-hint">Mantén presionado o toca para activar</div>
+    <div class="sos-hint">Toca para enviar tu ubicaci&#243;n a tu c&#237;rculo &middot; modo silencioso</div>
   </div>
   <div class="home-row">
     <button class="btn dark" id="acompBtn">🚶 Acompáñame</button>
@@ -247,6 +247,8 @@
   </div>
   <div class="row" style="margin-top:18px">
     <a class="btn dark" href="tel:911" style="flex:1; text-align:center; text-decoration:none; padding:16px 0">📞 Llamar 911</a>
+    <div id="silentNote" style="font-size:13px;color:#cdbfc1;background:rgba(54,211,153,.08);border:1px solid rgba(54,211,153,.28);border-radius:10px;padding:10px 12px;margin:6px 0 10px;line-height:1.45">&#128263; <b style="color:#36d399">Modo silencioso activo.</b> Tu ubicaci&#243;n se env&#237;a a tu c&#237;rculo sin sonido. Activa la alarma solo si quieres llamar la atenci&#243;n (&#250;til contra acoso; ev&#237;tala en un posible asalto).</div>
+    <button class="btn" id="alarmToggle" style="background:linear-gradient(180deg,#ff8a3e,#a14a1a);color:#1a0a04;font-weight:700;margin-bottom:8px">&#128266; Activar alarma</button>
     <button class="btn green" id="sosSafe">Estoy a salvo</button>
   </div>
   <div class="footer-note">AEGIS te acompaña; no sustituye a los servicios de emergencia oficiales.</div>
@@ -728,7 +730,7 @@ function startSosCountdown(){
   cdLeft=3; $('#cdNum').textContent=cdLeft;
   show('sosCount'); vibrate(80);
   // PRIMA la voz dentro del gesto (necesario en iOS)
-  if(voiceOn) speak('Activando SOS. Estoy contigo.');
+  // (modo silencioso por defecto: sin voz al activar)
   cdInterval=setInterval(function(){
     cdLeft--;
     if(cdLeft<=0){ clearInterval(cdInterval); cdInterval=null; activateSos(); return; }
@@ -748,16 +750,12 @@ function activateSos(){
   $('#sosProtocol').style.display='none';
 
   // 🚨 Alarma, seguimiento en vivo y escucha de respuestas
-  startAlarm();
   startSosTracking();
   startSosPolling();
+  updateAlarmBtn();
 
   // Pintar contactos en cuanto haya sessionId (la ubicación se completa cuando llega)
   renderSosContacts();
-
-  setTimeout(function(){
-    speak('Tu círculo ya sabe. Toca enviar a cada contacto. Cuéntame qué está pasando.');
-  }, 400);
 }
 
 function renderSosContacts(){
@@ -808,6 +806,17 @@ $$('#sosTypes button').forEach(function(b){
     $('#sosProtocol').style.display='block';
     speak(p.texto);
   });
+});
+function updateAlarmBtn(){
+  var b=document.getElementById('alarmToggle'); if(!b) return;
+  if(alarmActive){ b.textContent='\uD83D\uDD07 Silenciar alarma'; b.style.background='linear-gradient(180deg,#48e6ab,#1f9e74)'; b.style.color='#04261c'; }
+  else { b.textContent='\uD83D\uDD0A Activar alarma'; b.style.background='linear-gradient(180deg,#ff8a3e,#a14a1a)'; b.style.color='#1a0a04'; }
+}
+var __alarmToggleBtn=document.getElementById('alarmToggle');
+if(__alarmToggleBtn) __alarmToggleBtn.addEventListener('click', function(){
+  audio();
+  if(alarmActive){ stopAlarm(); } else { startAlarm(); }
+  updateAlarmBtn();
 });
 $('#sosSafe').addEventListener('click', function(){
   if(confirm('¿Marcar que ya estás a salvo? Se apaga la alarma, se detiene el seguimiento, y tu círculo lo verá en su pantalla.')){
