@@ -578,6 +578,8 @@ function newSessionId(){
 }
 function startSosTracking(){
   sosSessionId = newSessionId();
+  // crear la sesion de inmediato para que el enlace funcione aunque tarde el GPS
+  try{ fetch('/api/sos/update', { method:'POST', headers:{'content-type':'application/json'}, body: JSON.stringify({ id:sosSessionId, user:user.name }) }).catch(function(){}); }catch(e){}
   if(navigator.geolocation){
     sosWatchId = navigator.geolocation.watchPosition(function(pos){
       lastSosPos = { lat:pos.coords.latitude, lng:pos.coords.longitude, accuracy:Math.round(pos.coords.accuracy||0) };
