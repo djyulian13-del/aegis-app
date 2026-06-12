@@ -337,6 +337,19 @@
 </section>
 
 <!-- ========== AJUSTES ========== -->
+<section class="screen" id="opiniones">
+  <div class="head"><div class="back" data-go="home">&#8592;</div><h2>Opiniones</h2><div></div></div>
+  <div class="card" style="margin-top:6px">
+    <div class="eyebrow">Tu rese&#241;a</div>
+    <div id="starPick" style="font-size:30px;letter-spacing:8px;margin:12px 0;cursor:pointer"></div>
+    <textarea class="input" id="revText" rows="3" maxlength="400" placeholder="Cu&#233;ntanos tu experiencia con AEGIS (opcional)" style="resize:none"></textarea>
+    <button class="btn" id="revSend" style="margin-top:12px">Enviar rese&#241;a</button>
+    <div id="revMsg" style="font-size:13px;margin-top:8px;min-height:18px"></div>
+  </div>
+  <div class="eyebrow" style="margin-top:22px">Lo que dice la comunidad <span id="revAvg" style="color:var(--ink)"></span></div>
+  <div id="revList" style="margin-top:10px"></div>
+</section>
+
 <section class="screen" id="ajustes">
   <div class="head"><div class="back" data-go="home">←</div><h2>Ajustes</h2><div></div></div>
   <div class="card" style="margin-top:10px">
@@ -349,6 +362,9 @@
       <input type="checkbox" id="setVoice" /> Activar voz en emergencias y acompañamiento
     </label>
   </div>
+  <button class="btn dark" data-go="opiniones" style="margin-top:14px">&#11088; Opiniones y rese&#241;as</button>
+  <button class="btn dark" id="setShare" style="margin-top:10px">&#8599; Compartir AEGIS</button>
+  <button class="btn dark" id="setCourse" style="margin-top:10px">&#128214; El curso &#183; El Arte de Proteger</button>
   <button class="btn dark" data-go="circulo" style="margin-top:14px">Gestionar círculo de confianza</button>
   <button class="btn ghost" id="setReset" style="margin-top:14px">Restablecer AEGIS (borrar todo)</button>
   <div class="footer-note" style="line-height:1.7">AEGIS guarda tu información solo en este dispositivo. No es servicio oficial de emergencias.<br><br><a href="/privacidad.html" target="_blank" style="color:var(--accent);text-decoration:underline">Aviso de Privacidad</a> · <a href="/terminos.html" target="_blank" style="color:var(--accent);text-decoration:underline">Términos de Uso</a></div>
@@ -1111,6 +1127,51 @@ function openAsesor(a){
 }
 
 /* ===================== AJUSTES ===================== */
+var revStars=0;
+function renderStars(){
+  var box=document.getElementById('starPick'); if(!box) return;
+  box.innerHTML='';
+  for(var i=1;i<=5;i++){
+    var s=document.createElement('span'); s.setAttribute('data-v', i);
+    s.innerHTML = (i<=revStars ? '&#9733;' : '&#9734;');
+    s.style.color = (i<=revStars ? '#ffd24a' : '#5a4a4d');
+    s.addEventListener('click', function(){ revStars=parseInt(this.getAttribute('data-v'),10); renderStars(); });
+    box.appendChild(s);
+  }
+}
+function renderOpiniones(){
+  revStars=0;
+  var t=document.getElementById('revText'); if(t) t.value='';
+  var m=document.getElementById('revMsg'); if(m) m.innerHTML='';
+  renderStars();
+  var list=document.getElementById('revList'); if(list) list.innerHTML='<div class="footer-note">Cargando...</div>';
+  fetch('/api/reviews?t='+Date.now()).then(function(r){ return r.json(); }).then(function(d){
+    var avg=document.getElementById('revAvg'); if(avg) avg.innerHTML = d.count ? ('&#9733; '+d.avg+' &#183; '+d.count) : '';
+    if(!list) return;
+    if(!d.reviews || !d.reviews.length){ list.innerHTML='<div class="footer-note">A&#250;n no hay rese&#241;as. &#161;S&#233; el primero!</div>'; return; }
+    list.innerHTML = d.reviews.map(function(r){
+      var st=''; for(var i=1;i<=5;i++){ st += (i<=r.stars ? '&#9733;' : '&#9734;'); }
+      return '<div class="card" style="margin-bottom:10px"><div style="color:#ffd24a;font-size:15px">'+st+'</div>'+(r.text ? '<p style="font-size:14px;margin-top:6px;color:var(--ink)">'+escapeHtml(r.text)+'</p>' : '')+'<div style="font-size:12px;color:var(--muted);margin-top:6px">'+escapeHtml(r.name||'Alguien')+'</div></div>';
+    }).join('');
+  }).catch(function(){ if(list) list.innerHTML='<div class="footer-note">No se pudieron cargar.</div>'; });
+}
+document.getElementById('revSend').addEventListener('click', function(){
+  var m=document.getElementById('revMsg');
+  if(!revStars){ m.style.color='#ff8088'; m.innerHTML='Toca las estrellas para calificar.'; return; }
+  var b=this; b.disabled=true; b.innerHTML='Enviando...';
+  fetch('/api/review', { method:'POST', headers:{'content-type':'application/json'}, body: JSON.stringify({ stars:revStars, text:(document.getElementById('revText').value||'').trim(), name:(user&&user.name)||'Alguien' }) })
+    .then(function(r){ return r.json(); }).then(function(){
+      m.style.color='var(--green)'; m.innerHTML='&#161;Gracias por tu rese&#241;a!';
+      b.disabled=false; b.innerHTML='Enviar rese&#241;a';
+      setTimeout(renderOpiniones, 1200);
+    }).catch(function(){ m.style.color='#ff8088'; m.innerHTML='No se pudo enviar.'; b.disabled=false; b.innerHTML='Enviar rese&#241;a'; });
+});
+document.getElementById('setShare').addEventListener('click', function(){
+  var sd={ title:'AEGIS', text:'Te comparto AEGIS, app gratis de seguridad personal. SOS con ubicaci\u00f3n en vivo + modo Acomp\u00e1\u00f1ame.', url:'https://app.elartedelproteger.com' };
+  if(navigator.share){ navigator.share(sd).catch(function(){}); }
+  else { try{ navigator.clipboard.writeText(sd.url); alert('Enlace copiado: '+sd.url); }catch(e){ window.open('https://wa.me/?text='+encodeURIComponent(sd.text+' '+sd.url),'_blank'); } }
+});
+document.getElementById('setCourse').addEventListener('click', function(){ window.open('https://elartedelproteger.com','_blank'); });
 function openAjustes(){
   $('#setName').value=user.name||'';
   $('#setVoice').checked=voiceOn;
@@ -1138,6 +1199,7 @@ document.addEventListener('click', function(e){
   if(g==='circulo') setTimeout(renderCirculo,10);
   if(g==='asesoria') setTimeout(renderAsesoria,10);
   if(g==='ajustes') setTimeout(openAjustes,10);
+  if(g==='opiniones') setTimeout(renderOpiniones,10);
 });
 
 /* ===================== ARRANQUE ===================== */
