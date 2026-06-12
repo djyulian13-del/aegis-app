@@ -126,6 +126,11 @@
     <h2><span class="dot"></span> SOS recientes</h2>
     <div id="recent-sos" class="list"></div>
   </div>
+
+  <div class="section">
+    <h2><span class="dot"></span> Rese&#241;as</h2>
+    <div id="reviews-list" class="list"></div>
+  </div>
 </div>
 
 </div>
@@ -221,6 +226,8 @@ function render(d){
     when: timeAgo(s.ts)
   }));
 
+  renderReviews(d.reviews||[]);
+
   // updated
   document.getElementById('updated').textContent = new Date(d.generated_at||Date.now()).toLocaleString();
 }
@@ -246,6 +253,28 @@ function renderList(id, arr, mapFn){
   });
 }
 
+function renderReviews(arr){
+  const box = document.getElementById('reviews-list');
+  if(!box) return;
+  box.innerHTML = '';
+  if(!arr || !arr.length){ box.innerHTML = '<div class="empty">Sin rese&#241;as todav&#237;a.</div>'; return; }
+  arr.forEach(function(r){
+    const row = document.createElement('div');
+    row.className = 'row';
+    row.style.opacity = r.hidden ? '0.45' : '1';
+    var stars=''; for(var i=1;i<=5;i++){ stars += (i<=r.stars ? '&#9733;' : '&#9734;'); }
+    row.innerHTML =
+      '<div class="who" style="color:#ffd24a">'+stars+'<small style="color:var(--ink)">'+(r.text?escape(r.text):'(sin texto)')+'</small><small>'+escape(r.name||'')+(r.hidden?' &#183; (oculta)':'')+'</small></div>'+
+      '<div class="country">'+flag(r.country)+'</div>'+
+      '<div class="when"><button class="btn" style="padding:4px 9px;font-size:11px" onclick="toggleReview(\''+r.id+'\','+(r.hidden?'false':'true')+')">'+(r.hidden?'Mostrar':'Ocultar')+'</button></div>';
+    box.appendChild(row);
+  });
+}
+function toggleReview(id, hide){
+  const key = localStorage.getItem(KEY_STORAGE);
+  const body = hide ? { hideReview:id } : { showReview:id };
+  fetch('/api/admin/rebuild?key='+encodeURIComponent(key), { method:'POST', headers:{'content-type':'application/json'}, body: JSON.stringify(body) }).then(function(){ load(key); });
+}
 function escape(s){
   return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#39;"}[c]));
 }
