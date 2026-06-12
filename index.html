@@ -185,6 +185,18 @@
   <div style="margin-top:auto"><button class="btn" id="onbFinish" disabled style="opacity:.5">Continuar →</button></div>
 </section>
 
+<section class="screen" id="onb-location">
+  <div class="head"><div></div></div>
+  <div class="eyebrow">&Uacute;ltimo paso</div>
+  <h1 style="margin-top:8px">Activa tu ubicaci&#243;n</h1>
+  <p class="lead">Para que en una emergencia tus contactos te vean <b style="color:var(--ink)">en el mapa, en vivo</b>, AEGIS necesita permiso para usar tu ubicaci&#243;n. Sin esto, el SOS avisa pero <b>no muestra d&#243;nde est&#225;s</b>.</p>
+  <div class="protocol" style="margin-top:16px">&#128205; Al tocar &#8220;Permitir&#8221;, tu tel&#233;fono te preguntar&#225;. En <b>iPhone</b> elige <b>&#8220;Permitir una vez&#8221;</b> o <b>&#8220;Al usar la app&#8221;</b>.</div>
+  <div style="margin-top:auto">
+    <button class="btn" id="onbAllowLoc">Permitir ubicaci&#243;n</button>
+    <button class="btn ghost" id="onbSkipLoc" style="margin-top:10px">Ahora no</button>
+  </div>
+</section>
+
 <section class="screen" id="onb-email">
   <div class="head"><div class="back" data-go="onb-contacts">←</div></div>
   <div class="eyebrow">Paso 3 de 3</div>
@@ -229,6 +241,7 @@
   <div class="eyebrow">● SOS activo · AEGIS contigo</div>
   <h1 style="margin-top:8px;font-size:24px" id="sosTitle">Tu círculo ya sabe</h1>
   <p class="lead" id="sosSub">Tu ubicación está lista. Toca <b>Enviar</b> a cada contacto.</p>
+  <div id="sosLocStatus" class="protocol" style="display:none;margin-top:12px"></div>
   <div id="sosContactList" style="margin-top:16px"></div>
   <div id="sosTypeWrap">
     <div class="eyebrow" style="margin-top:18px">¿Qué está pasando?</div>
@@ -453,9 +466,16 @@ $('#onbEmailFinish').addEventListener('click', function(){
       body: JSON.stringify({ email: em, name: user.name })
     }).catch(function(){});
   }catch(e){}
-  enterHome();
+  show('onb-location');
 });
 
+$('#onbAllowLoc').addEventListener('click', function(){
+  var b=this; b.disabled=true; b.textContent='Activando...';
+  if(navigator.geolocation){
+    navigator.geolocation.getCurrentPosition(function(){ enterHome(); }, function(){ enterHome(); }, {enableHighAccuracy:true, timeout:12000, maximumAge:0});
+  } else { enterHome(); }
+});
+$('#onbSkipLoc').addEventListener('click', function(){ enterHome(); });
 function enterHome(){
   $('#homeName').textContent='Hola, '+user.name;
   $('#homeStatus').textContent= contacts.length+' '+(contacts.length===1?'contacto':'contactos')+' en tu círculo';
@@ -576,15 +596,22 @@ var sosSessionId=null, sosWatchId=null, sosPostIv=null, lastSosPos=null;
 function newSessionId(){
   return (Math.random().toString(36).slice(2,8)+Math.random().toString(36).slice(2,8)+Date.now().toString(36)).slice(0,16);
 }
+function setSosLoc(s){
+  var el=document.getElementById('sosLocStatus'); if(!el) return;
+  if(s==='wait'){ el.style.display='block'; el.style.background='rgba(255,170,102,.08)'; el.style.borderColor='rgba(255,170,102,.4)'; el.innerHTML='&#128205; Obteniendo tu ubicaci&#243;n&#8230; acepta el permiso si tu tel&#233;fono lo pide.'; }
+  else if(s==='ok'){ el.style.display='none'; }
+  else if(s==='err'){ el.style.display='block'; el.style.background='rgba(255,42,54,.08)'; el.style.borderColor='rgba(255,42,54,.5)'; el.innerHTML='&#9888;&#65039; <b>Tu ubicaci&#243;n est&#225; desactivada</b> &#8212; tus contactos ver&#225;n el aviso pero no el mapa. Act&#237;vala: <b>iPhone</b>: Ajustes &#8250; Privacidad &#8250; Localizaci&#243;n &#8250; Safari &#8250; Permitir. <b>Android</b>: acepta el permiso de ubicaci&#243;n.'; }
+}
 function startSosTracking(){
   sosSessionId = newSessionId();
   // crear la sesion de inmediato para que el enlace funcione aunque tarde el GPS
   try{ fetch('/api/sos/update', { method:'POST', headers:{'content-type':'application/json'}, body: JSON.stringify({ id:sosSessionId, user:user.name }) }).catch(function(){}); }catch(e){}
   if(navigator.geolocation){
+    setSosLoc('wait');
     sosWatchId = navigator.geolocation.watchPosition(function(pos){
       lastSosPos = { lat:pos.coords.latitude, lng:pos.coords.longitude, accuracy:Math.round(pos.coords.accuracy||0) };
-      postSosLocation();
-    }, function(err){ /* ignore */ }, {enableHighAccuracy:true, timeout:15000, maximumAge:3000});
+      postSosLocation(); setSosLoc('ok');
+    }, function(err){ setSosLoc('err'); }, {enableHighAccuracy:true, timeout:15000, maximumAge:3000});
   }
   sosPostIv = setInterval(postSosLocation, 8000);
 }
