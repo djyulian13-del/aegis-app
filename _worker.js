@@ -19,6 +19,8 @@ export default {
     if (path === '/api/acomp/ping'    && request.method === 'POST') return cors(await acompPing(request, env));
     if (path === '/api/acomp/extend'  && request.method === 'POST') return cors(await acompExtend(request, env));
     if (path === '/api/acomp/checkin' && request.method === 'POST') return cors(await acompCheckin(request, env));
+    if (path === '/api/review'    && request.method === 'POST') return cors(await reviewAdd(request, env));
+    if (path === '/api/reviews'   && request.method === 'GET')  return cors(await reviewsGet(request, env));
     if (path === '/api/subscribe'  && request.method === 'POST') return cors(await subscribe(request, env));
     if (path === '/api/admin/stats' && request.method === 'GET') return cors(await adminStats(request, env));
     if (path === '/api/admin/rebuild' && request.method === 'POST') return cors(await adminRebuild(request, env));
@@ -364,10 +366,12 @@ async function adminStats(request, env){
   const subs_by_country = await readCountries(subC, 'stats:country:');
   const sos_by_country = await readCountries(sosC, 'stats:sos_country:');
 
+  const reviews = (await env.AEGIS_SOS.get('stats:reviews','json')) || [];
   return json({
     subs_count, sos_count,
     subs_by_country, sos_by_country,
     recent_subs, recent_sos,
+    reviews,
     generated_at: Date.now()
   });
 }
@@ -389,6 +393,13 @@ async function adminRebuild(request, env){
     await env.AEGIS_SOS.put('stats:recent_sos', JSON.stringify([]));
     const scs = await env.AEGIS_SOS.list({ prefix: 'stats:sos_country:' });
     for (const k of scs.keys) await env.AEGIS_SOS.delete(k.name);
+  }
+
+  if (body.hideReview || body.showReview) {
+    const rid = body.hideReview || body.showReview;
+    const arr = (await env.AEGIS_SOS.get('stats:reviews','json')) || [];
+    for (const rv of arr){ if(rv.id===rid) rv.hidden = !!body.hideReview; }
+    await env.AEGIS_SOS.put('stats:reviews', JSON.stringify(arr));
   }
 
   // borrar correos solicitados
@@ -550,6 +561,29 @@ async function sendAcompAlert(env, e){
   });
 }
 
+async function reviewAdd(request, env){
+  let d; try{ d=await request.json(); }catch(e){ return json({ok:false},400); }
+  if(!d) return json({ok:false},400);
+  const stars = Math.max(1, Math.min(5, parseInt(d.stars,10)||0));
+  if(!stars) return json({ok:false, error:'stars'},400);
+  const text = (d.text||'').toString().slice(0,400).replace(/[<>]/g,'');
+  const name = (d.name||'Alguien').toString().slice(0,40).replace(/[<>]/g,'');
+  const country = (request.cf && request.cf.country) || 'XX';
+  const rev = { id:acompRid(), stars:stars, text:text, name:name, country:country, ts:Date.now(), hidden:false };
+  const arr = (await env.AEGIS_SOS.get('stats:reviews','json')) || [];
+  arr.unshift(rev);
+  if(arr.length>200) arr.length=200;
+  await env.AEGIS_SOS.put('stats:reviews', JSON.stringify(arr));
+  return json({ ok:true });
+}
+async function reviewsGet(request, env){
+  const arr = (await env.AEGIS_SOS.get('stats:reviews','json')) || [];
+  const visible = arr.filter(function(r){ return !r.hidden; });
+  const count = visible.length;
+  const avg = count ? (visible.reduce(function(s,r){ return s+(r.stars||0); },0)/count) : 0;
+  const list = visible.slice(0,50).map(function(r){ return { stars:r.stars, text:r.text, name:r.name, ts:r.ts, country:r.country }; });
+  return json({ ok:true, count:count, avg:Math.round(avg*10)/10, reviews:list });
+}
 async function sosStatus(request, env) {
   let data;
   try { data = await request.json(); } catch (e) { return json({ ok:false, error:'bad json' }, 400); }
