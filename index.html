@@ -240,8 +240,9 @@
 <section class="screen" id="sosActive">
   <div class="eyebrow">● SOS activo · AEGIS contigo</div>
   <h1 style="margin-top:8px;font-size:24px" id="sosTitle">Tu círculo ya sabe</h1>
-  <p class="lead" id="sosSub">Tu ubicación está lista. Toca <b>Enviar</b> a cada contacto.</p>
+  <p class="lead" id="sosSub">Tu ubicación está lista. Toca <b>Avisar a todos</b> para enviarles de inmediato.</p>
   <div id="sosLocStatus" class="protocol" style="display:none;margin-top:12px"></div>
+  <button id="alertAll" onclick="aegisAlertAll()" style="width:100%;margin-top:16px;padding:18px 16px;border:none;border-radius:14px;background:linear-gradient(180deg,#ff3d49,#8f0c14);color:#fff;font-size:18px;font-weight:800;box-shadow:0 8px 24px rgba(255,42,54,.3)">🚨 Avisar a todos</button>
   <div id="sosContactList" style="margin-top:16px"></div>
   <div id="sosTypeWrap">
     <div class="eyebrow" style="margin-top:18px">¿Qué está pasando?</div>
@@ -806,6 +807,19 @@ function activateSos(){
   renderSosContacts();
 }
 
+function aegisAlertAll(){
+  var track=trackingUrl();
+  var msg='🚨 SOS · '+user.name+' necesita ayuda.';
+  if(track){ msg+='\n\n📍 Ubicación en vivo (se actualiza sola):\n'+track+'\n\nAbre el link. Si la ves en peligro, llama al 911.'; }
+  else if(typeof lastSosPos!=='undefined' && lastSosPos){ msg+='\n\n📍 Ubicación: https://maps.google.com/?q='+lastSosPos.lat+','+lastSosPos.lng; }
+  else { msg+='\n\n(Aún sin ubicación. Llámale ya.)'; }
+  msg+='\n\n— AEGIS';
+  var nums=contacts.map(function(c){return '+'+c.phone;}).join(',');
+  var ios=/iPhone|iPad|iPod/i.test(navigator.userAgent);
+  var url='sms:'+nums+(ios?'&':'?')+'body='+encodeURIComponent(msg);
+  var b=document.getElementById('alertAll'); if(b){ b.textContent='✓ Abriendo Mensajes…'; setTimeout(function(){ b.textContent='🚨 Avisar a todos'; },4000); }
+  window.location.href=url;
+}
 function renderSosContacts(){
   var list=$('#sosContactList'); list.innerHTML='';
   contacts.forEach(function(c){
