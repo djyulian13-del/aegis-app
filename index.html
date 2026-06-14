@@ -820,6 +820,7 @@ function aegisAlertAll(){
   var b=document.getElementById('alertAll'); if(b){ b.textContent='✓ Abriendo Mensajes…'; setTimeout(function(){ b.textContent='🚨 Avisar a todos'; },4000); }
   window.location.href=url;
 }
+window.aegisAlertAll=aegisAlertAll;
 function renderSosContacts(){
   var list=$('#sosContactList'); list.innerHTML='';
   contacts.forEach(function(c){
