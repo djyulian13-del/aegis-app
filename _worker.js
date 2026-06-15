@@ -97,7 +97,7 @@ async function subscribe(request, env) {
   const key = 'sub:' + email;
   const existing = await env.AEGIS_SOS.get(key, 'json');
   // Si ya estaba y no piden reenvío explícito, no spammeamos
-  if (existing && !data.force) return json({ ok:true, already:true });
+  if (existing && !data.force) { try { await sendWelcomeEmail(env, email, name); } catch(e){} return json({ ok:true, already:true }); }
 
   const country = (request.cf && request.cf.country) || 'XX';
 
