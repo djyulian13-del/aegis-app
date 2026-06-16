@@ -3,7 +3,7 @@
    - Cualquier otra ruta cae a los archivos estáticos del proyecto. */
 
 const TTL = 24 * 60 * 60; // 24 horas
-const MAX_HISTORY = 60;
+const MAX_HISTORY = 60; // redeploy
 
 export default {
   async fetch(request, env, ctx) {
