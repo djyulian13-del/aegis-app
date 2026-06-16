@@ -23,7 +23,7 @@ export default {
     if (path === '/api/reviews'   && request.method === 'GET')  return cors(await reviewsGet(request, env));
     if (path === '/api/subscribe'  && request.method === 'POST') return cors(await subscribe(request, env));
     if (path === '/api/admin/stats' && request.method === 'GET') return cors(await adminStats(request, env));
-    if (path === '/api/admin/rebuild' && request.method === 'POST') return cors(await adminRebuild(request, env));
+    if (path === '/api/admin/broadcast' && request.method === 'POST') return cors(await broadcast(request, env)); if (path === '/api/admin/rebuild' && request.method === 'POST') return cors(await adminRebuild(request, env));
 
     // Resto: archivos estáticos
     return env.ASSETS.fetch(request);
@@ -333,7 +333,7 @@ async function pushRecent(env, key, item, max){
   await env.AEGIS_SOS.put(key, JSON.stringify(cur));
 }
 
-async function adminStats(request, env){
+async function broadcast(request, env){ const u=new URL(request.url); const key=u.searchParams.get('key')||request.headers.get('x-admin-key')||''; if(!env.ADMIN_KEY||key!==env.ADMIN_KEY) return json({ok:false,error:'unauthorized'},401); let b; try{ b=await request.json(); }catch(e){ return json({ok:false,error:'bad body'},400); } const subject=(b.subject||'').toString(); const html=(b.html||'').toString(); if(!subject||!html||!env.RESEND_API_KEY) return json({ok:false,error:'missing'},400); const fromAddr=env.RESEND_FROM||'AEGIS <aegis@elartedelproteger.com>'; const listing=await env.AEGIS_SOS.list({prefix:'sub:'}); let sent=0,failed=0; for(const k of listing.keys){ const email=k.name.slice(4); try{ const r=await fetch('https://api.resend.com/emails',{method:'POST',headers:{'Authorization':'Bearer '+env.RESEND_API_KEY,'Content-Type':'application/json'},body:JSON.stringify({from:fromAddr,to:[email],subject:subject,html:html})}); if(r.ok)sent++;else failed++; }catch(e){ failed++; } } return json({ok:true,total:listing.keys.length,sent,failed}); } async function adminStats(request, env){
   // Auth: ?key=... o header x-admin-key
   const url = new URL(request.url);
   const key = url.searchParams.get('key') || request.headers.get('x-admin-key') || '';
