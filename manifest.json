@@ -1,6 +1,6 @@
 {
-  "name": "AEGIS — Tu red de protección",
-  "short_name": "AEGIS",
+  "name": "PJ ALERT — Tu red de protección",
+  "short_name": "PJ ALERT",
   "description": "Botón de pánico y red de contactos de confianza. Asesoría en emergencias y modo Acompáñame.",
   "start_url": "/",
   "display": "standalone",
