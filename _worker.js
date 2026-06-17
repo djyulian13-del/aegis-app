@@ -1,4 +1,4 @@
-/* AEGIS — Worker con archivos estáticos + API de SOS en vivo.
+/* PJ ALERT — Worker con archivos estáticos + API de SOS en vivo.
    - Rutas /api/sos/* manejan el seguimiento en tiempo real (lectura/escritura en KV).
    - Cualquier otra ruta cae a los archivos estáticos del proyecto. */
 
@@ -138,14 +138,14 @@ async function getOrCreateAudience(env){
   const cached = await env.AEGIS_SOS.get('config:resend_audience_id');
   if (cached) return cached;
   try {
-    // Listar audiencias y buscar "AEGIS Suscriptores"
+    // Listar audiencias y buscar "PJ ALERT Suscriptores"
     const r = await fetch('https://api.resend.com/audiences', {
       headers:{'Authorization':'Bearer ' + env.RESEND_API_KEY}
     });
     const d = await r.json();
     let id = null;
     if (d && d.data && Array.isArray(d.data)) {
-      const hit = d.data.find(a => a.name === 'AEGIS Suscriptores');
+      const hit = d.data.find(a => a.name === 'PJ ALERT Suscriptores');
       if (hit) id = hit.id;
     }
     if (!id) {
@@ -153,7 +153,7 @@ async function getOrCreateAudience(env){
       const c = await fetch('https://api.resend.com/audiences', {
         method:'POST',
         headers:{'Authorization':'Bearer ' + env.RESEND_API_KEY, 'Content-Type':'application/json'},
-        body: JSON.stringify({ name: 'AEGIS Suscriptores' })
+        body: JSON.stringify({ name: 'PJ ALERT Suscriptores' })
       });
       const cd = await c.json();
       id = cd && cd.id;
@@ -167,10 +167,10 @@ async function getOrCreateAudience(env){
 
 async function sendWelcomeEmail(env, email, name){
   const firstName = (name || 'amig@').toString().split(/\s+/)[0] || 'amig@';
-  const fromAddr = env.RESEND_FROM || 'AEGIS <aegis@elartedelproteger.com>';
-  const html = `<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>AEGIS · Sistema activado</title></head>
+  const fromAddr = env.RESEND_FROM || 'PJ ALERT <aegis@elartedelproteger.com>';
+  const html = `<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>PJ ALERT · Sistema activado</title></head>
 <body style="margin:0;padding:0;background:#070405;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#f4eaea;">
-<div style="display:none;max-height:0;overflow:hidden;color:#070405;">${firstName}, tu sistema AEGIS está activo. Aquí va tu primer protocolo de seguridad y lo que sigue.</div>
+<div style="display:none;max-height:0;overflow:hidden;color:#070405;">${firstName}, tu sistema PJ ALERT está activo. Aquí va tu primer protocolo de seguridad y lo que sigue.</div>
 <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background:#070405;">
 <tr><td align="center" style="padding:0;background:linear-gradient(180deg,#2a070a 0%,#120607 30%,#070405 100%);">
 <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="max-width:600px;">
@@ -183,7 +183,7 @@ async function sendWelcomeEmail(env, email, name){
 </td></tr>
 
 <tr><td align="center" style="padding:18px 24px 0;">
-  <span style="font-family:'SFMono-Regular',Menlo,Consolas,monospace;font-size:11px;letter-spacing:.42em;color:#ff2a36;text-transform:uppercase;">● AEGIS · Sistema activado</span>
+  <span style="font-family:'SFMono-Regular',Menlo,Consolas,monospace;font-size:11px;letter-spacing:.42em;color:#ff2a36;text-transform:uppercase;">● PJ ALERT · Sistema activado</span>
 </td></tr>
 
 <tr><td align="center" style="padding:14px 24px 0;">
@@ -215,7 +215,7 @@ async function sendWelcomeEmail(env, email, name){
 <tr><td align="center" style="padding:28px 24px 8px;">
   <table role="presentation" cellpadding="0" cellspacing="0" border="0">
     <tr><td align="center" style="background:linear-gradient(180deg,#ff5c5c 0%,#ff2a36 50%,#8f0c14 100%);border-radius:99px;box-shadow:0 10px 30px -10px rgba(255,42,54,.6);">
-      <a href="https://app.elartedelproteger.com" style="display:inline-block;padding:16px 38px;color:#1a0203;text-decoration:none;font-weight:800;font-size:16px;letter-spacing:.02em;">⚡ Abrir AEGIS</a>
+      <a href="https://app.elartedelproteger.com" style="display:inline-block;padding:16px 38px;color:#1a0203;text-decoration:none;font-weight:800;font-size:16px;letter-spacing:.02em;">⚡ Abrir PJ ALERT</a>
     </td></tr>
   </table>
 </td></tr>
@@ -224,7 +224,7 @@ async function sendWelcomeEmail(env, email, name){
 <tr><td style="padding:20px 24px 0;">
   <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background:#0c131b;border:1px solid rgba(255,255,255,.08);border-radius:14px;">
     <tr><td style="padding:18px 18px 16px;">
-      <div style="font-family:'SFMono-Regular',Menlo,Consolas,monospace;font-size:10px;letter-spacing:.32em;color:#ff2a36;text-transform:uppercase;margin-bottom:10px;">▸ Instala AEGIS en tu teléfono</div>
+      <div style="font-family:'SFMono-Regular',Menlo,Consolas,monospace;font-size:10px;letter-spacing:.32em;color:#ff2a36;text-transform:uppercase;margin-bottom:10px;">▸ Instala PJ ALERT en tu teléfono</div>
       <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
         <tr>
           <td width="44" valign="top"><div style="width:34px;height:34px;border-radius:9px;background:rgba(0,122,255,.12);border:1px solid rgba(0,122,255,.4);text-align:center;line-height:34px;font-size:16px;color:#5ea8ff;">📱</div></td>
@@ -276,8 +276,8 @@ async function sendWelcomeEmail(env, email, name){
       <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%"><tr>
         <td width="48" valign="top"><div style="width:38px;height:38px;border-radius:50%;background:rgba(255,42,54,.1);border:1px solid rgba(255,42,54,.35);text-align:center;line-height:38px;font-size:16px;color:#ff2a36;">👥</div></td>
         <td valign="top" style="padding-left:14px;">
-          <div style="font-size:15px;font-weight:600;color:#f4eaea;margin-bottom:3px;">Comparte AEGIS con quien te importa.</div>
-          <div style="font-size:13px;line-height:1.55;color:#8f7d80;">Si tú tienes red de protección, ellos también merecen una. <a href="https://wa.me/?text=No%20est%C3%A1s%20solo%2Fa.%20Activ%C3%A9%20AEGIS%2C%20una%20app%20gratis%20de%20protecci%C3%B3n%20personal%3A%20https%3A%2F%2Fapp.elartedelproteger.com" style="color:#ff2a36;text-decoration:underline;">Mandar AEGIS por WhatsApp →</a></div>
+          <div style="font-size:15px;font-weight:600;color:#f4eaea;margin-bottom:3px;">Comparte PJ ALERT con quien te importa.</div>
+          <div style="font-size:13px;line-height:1.55;color:#8f7d80;">Si tú tienes red de protección, ellos también merecen una. <a href="https://wa.me/?text=No%20est%C3%A1s%20solo%2Fa.%20Activ%C3%A9%20PJ ALERT%2C%20una%20app%20gratis%20de%20protecci%C3%B3n%20personal%3A%20https%3A%2F%2Fapp.elartedelproteger.com" style="color:#ff2a36;text-decoration:underline;">Mandar PJ ALERT por WhatsApp →</a></div>
         </td>
       </tr></table>
     </td></tr>
@@ -289,7 +289,7 @@ async function sendWelcomeEmail(env, email, name){
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#8f0c14" style="background-color:#8f0c14;border-radius:10px;">
     <tr><td bgcolor="#8f0c14" style="background-color:#8f0c14;padding:16px 18px;border-radius:10px;">
       <p style="margin:0;font-size:13px;line-height:1.55;color:#ffffff;text-align:left;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
-        <strong style="color:#ffffff;">⚠ Importante:</strong> AEGIS <strong style="color:#ffffff;">NO</strong> es un servicio oficial de emergencias y <strong style="color:#ffffff;">NO</strong> sustituye al 911. Si tu vida está en peligro inmediato, <strong style="color:#ffffff;">llama primero al 911</strong>.
+        <strong style="color:#ffffff;">⚠ Importante:</strong> PJ ALERT <strong style="color:#ffffff;">NO</strong> es un servicio oficial de emergencias y <strong style="color:#ffffff;">NO</strong> sustituye al 911. Si tu vida está en peligro inmediato, <strong style="color:#ffffff;">llama primero al 911</strong>.
       </p>
     </td></tr>
   </table>
@@ -298,7 +298,7 @@ async function sendWelcomeEmail(env, email, name){
 <!-- FOOTER -->
 <tr><td align="center" style="padding:18px 24px 40px;border-top:1px solid rgba(255,255,255,.06);">
   <p style="margin:0 0 10px;font-size:12px;line-height:1.6;color:#8f7d80;">
-    <strong style="color:#f4eaea;">AEGIS</strong> · Tu red de protección<br>
+    <strong style="color:#f4eaea;">PJ ALERT</strong> · Tu red de protección<br>
     <a href="https://elartedelproteger.com" style="color:#ff2a36;text-decoration:none;">elartedelproteger.com</a>
   </p>
   <p style="margin:10px 0 0;font-size:11px;color:#8f7d80;line-height:1.5;">¿No quieres más correos? Responde "baja" y te saco de la lista.</p>
@@ -311,7 +311,7 @@ async function sendWelcomeEmail(env, email, name){
     body: JSON.stringify({
       from: fromAddr,
       to: [email],
-      subject: `🛡 Estoy contigo, ${firstName}. Tu sistema AEGIS está activo.`,
+      subject: `🛡 Estoy contigo, ${firstName}. Tu sistema PJ ALERT está activo.`,
       html: html
     })
   });
@@ -333,7 +333,7 @@ async function pushRecent(env, key, item, max){
   await env.AEGIS_SOS.put(key, JSON.stringify(cur));
 }
 
-async function broadcast(request, env){ const u=new URL(request.url); const key=u.searchParams.get('key')||request.headers.get('x-admin-key')||''; if(!env.ADMIN_KEY||key!==env.ADMIN_KEY) return json({ok:false,error:'unauthorized'},401); let b; try{ b=await request.json(); }catch(e){ return json({ok:false,error:'bad body'},400); } const subject=(b.subject||'').toString(); const html=(b.html||'').toString(); if(!subject||!html||!env.RESEND_API_KEY) return json({ok:false,error:'missing'},400); const fromAddr=env.RESEND_FROM||'AEGIS <aegis@elartedelproteger.com>'; const listing=await env.AEGIS_SOS.list({prefix:'sub:'}); let sent=0,failed=0; for(const k of listing.keys){ const email=k.name.slice(4); try{ const r=await fetch('https://api.resend.com/emails',{method:'POST',headers:{'Authorization':'Bearer '+env.RESEND_API_KEY,'Content-Type':'application/json'},body:JSON.stringify({from:fromAddr,to:[email],subject:subject,html:html})}); if(r.ok)sent++;else failed++; }catch(e){ failed++; } } return json({ok:true,total:listing.keys.length,sent,failed}); } async function adminStats(request, env){
+async function broadcast(request, env){ const u=new URL(request.url); const key=u.searchParams.get('key')||request.headers.get('x-admin-key')||''; if(!env.ADMIN_KEY||key!==env.ADMIN_KEY) return json({ok:false,error:'unauthorized'},401); let b; try{ b=await request.json(); }catch(e){ return json({ok:false,error:'bad body'},400); } const subject=(b.subject||'').toString(); const html=(b.html||'').toString(); if(!subject||!html||!env.RESEND_API_KEY) return json({ok:false,error:'missing'},400); const fromAddr=env.RESEND_FROM||'PJ ALERT <aegis@elartedelproteger.com>'; const listing=await env.AEGIS_SOS.list({prefix:'sub:'}); let sent=0,failed=0; for(const k of listing.keys){ const email=k.name.slice(4); try{ const r=await fetch('https://api.resend.com/emails',{method:'POST',headers:{'Authorization':'Bearer '+env.RESEND_API_KEY,'Content-Type':'application/json'},body:JSON.stringify({from:fromAddr,to:[email],subject:subject,html:html})}); if(r.ok)sent++;else failed++; }catch(e){ failed++; } } return json({ok:true,total:listing.keys.length,sent,failed}); } async function adminStats(request, env){
   // Auth: ?key=... o header x-admin-key
   const url = new URL(request.url);
   const key = url.searchParams.get('key') || request.headers.get('x-admin-key') || '';
@@ -536,7 +536,7 @@ async function sendAcompAlert(env, e){
   if (e.contactEmail) to.push(e.contactEmail);
   if (e.userEmail && to.indexOf(e.userEmail) < 0) to.push(e.userEmail);
   if (!to.length) return;
-  const fromAddr = env.RESEND_FROM || 'AEGIS <aegis@elartedelproteger.com>';
+  const fromAddr = env.RESEND_FROM || 'PJ ALERT <aegis@elartedelproteger.com>';
   const hasLoc = (e.lat!=null && e.lng!=null);
   const mapUrl = hasLoc ? ('https://www.google.com/maps?q='+e.lat+','+e.lng) : '';
   const waUrl = e.contactPhone ? ('https://wa.me/'+e.contactPhone) : '';
@@ -545,19 +545,19 @@ async function sendAcompAlert(env, e){
   const html = '<!doctype html><html lang="es"><body style="margin:0;background:#070405;font-family:-apple-system,Segoe UI,Roboto,Arial,sans-serif;color:#f4eaea">' +
     '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#070405"><tr><td align="center" style="padding:30px 16px">' +
     '<table role="presentation" width="100%" style="max-width:560px">' +
-    '<tr><td style="background:#8f0c14;border-radius:12px 12px 0 0;padding:18px 22px"><div style="font-size:12px;letter-spacing:.2em;color:#ffd7da">&#9888;&#65039; ALERTA AEGIS</div><div style="font-size:22px;font-weight:800;color:#fff;margin-top:6px">' + name + ' no confirm&#243; que lleg&#243;</div></td></tr>' +
+    '<tr><td style="background:#8f0c14;border-radius:12px 12px 0 0;padding:18px 22px"><div style="font-size:12px;letter-spacing:.2em;color:#ffd7da">&#9888;&#65039; ALERTA PJ ALERT</div><div style="font-size:22px;font-weight:800;color:#fff;margin-top:6px">' + name + ' no confirm&#243; que lleg&#243;</div></td></tr>' +
     '<tr><td style="background:#0c131b;padding:22px;border:1px solid rgba(255,42,54,.25);border-top:none">' +
-    '<p style="margin:0 0 14px;font-size:15px;line-height:1.6;color:#e4d8da">' + name + ' activ&#243; <b>Acomp&#225;&#241;ame</b> en AEGIS rumbo a <b>' + dest + '</b> y deb&#237;a confirmar su llegada antes de las <b>' + hora + '</b>. No lo hizo. Por favor, <b>verifica que est&#233; bien.</b></p>' +
+    '<p style="margin:0 0 14px;font-size:15px;line-height:1.6;color:#e4d8da">' + name + ' activ&#243; <b>Acomp&#225;&#241;ame</b> en PJ ALERT rumbo a <b>' + dest + '</b> y deb&#237;a confirmar su llegada antes de las <b>' + hora + '</b>. No lo hizo. Por favor, <b>verifica que est&#233; bien.</b></p>' +
     (hasLoc ? '<p style="margin:0 0 8px;font-size:13px;color:#8f7d80">&#128205; &Uacute;ltima ubicaci&#243;n conocida:</p><a href="' + mapUrl + '" style="display:inline-block;background:#1a4fa1;color:#fff;text-decoration:none;padding:11px 16px;border-radius:9px;font-weight:700;font-size:14px;margin-bottom:14px">Ver en el mapa</a><br>' : '<p style="margin:0 0 14px;font-size:13px;color:#8f7d80">No hay ubicaci&#243;n registrada en esta sesi&#243;n.</p>') +
     (waUrl ? '<a href="' + waUrl + '" style="display:inline-block;background:#1f9e74;color:#fff;text-decoration:none;padding:11px 16px;border-radius:9px;font-weight:700;font-size:14px">Escribirle por WhatsApp</a>' : '') +
     '<table role="presentation" width="100%" style="background:rgba(255,42,54,.07);border-left:3px solid #ff2a36;border-radius:6px;margin-top:18px"><tr><td style="padding:12px 14px;font-size:13px;line-height:1.5;color:#ffb3b8"><b>Qu&#233; hacer:</b> respira, intenta contactarle, y si no responde o algo se siente mal, <b>llama al 911</b> con su ubicaci&#243;n. No vayas solo/a.</td></tr></table>' +
     '</td></tr>' +
-    '<tr><td style="background:#0c131b;border-radius:0 0 12px 12px;border:1px solid rgba(255,42,54,.25);border-top:none;padding:14px 22px;text-align:center"><span style="font-size:11px;color:#8f7d80">AEGIS &middot; El Arte de Proteger &middot; no sustituye a los servicios de emergencia oficiales</span></td></tr>' +
+    '<tr><td style="background:#0c131b;border-radius:0 0 12px 12px;border:1px solid rgba(255,42,54,.25);border-top:none;padding:14px 22px;text-align:center"><span style="font-size:11px;color:#8f7d80">PJ ALERT &middot; El Arte de Proteger &middot; no sustituye a los servicios de emergencia oficiales</span></td></tr>' +
     '</table></td></tr></table></body></html>';
   await fetch('https://api.resend.com/emails', {
     method:'POST',
     headers:{'Authorization':'Bearer '+env.RESEND_API_KEY,'Content-Type':'application/json'},
-    body: JSON.stringify({ from: fromAddr, to: to, subject: '\uD83D\uDEA8 ALERTA AEGIS: '+e.name+' no confirmo llegada', html: html })
+    body: JSON.stringify({ from: fromAddr, to: to, subject: '\uD83D\uDEA8 ALERTA PJ ALERT: '+e.name+' no confirmo llegada', html: html })
   });
 }
 
