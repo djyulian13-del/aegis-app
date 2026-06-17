@@ -3,15 +3,15 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-<title>AEGIS — Tu red de protección</title>
-<meta name="description" content="AEGIS: tu botón de pánico y red de contactos de confianza. Asesoría en emergencias por voz, ubicación en vivo y modo Acompáñame." />
+<title>PJ ALERT — Tu red de protección</title>
+<meta name="description" content="PJ ALERT: tu botón de pánico y red de contactos de confianza. Asesoría en emergencias por voz, ubicación en vivo y modo Acompáñame." />
 <meta name="theme-color" content="#070405" />
 <link rel="manifest" href="/manifest.json" />
 <link rel="icon" type="image/png" href="/icon-192.png" />
 <link rel="apple-touch-icon" href="/icon-192.png" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-<meta name="apple-mobile-web-app-title" content="AEGIS" />
+<meta name="apple-mobile-web-app-title" content="PJ ALERT" />
 <style>
   :root{
     --bg:#070405; --bg2:#120607; --ink:#f4eaea; --muted:#8f7d80;
@@ -159,9 +159,9 @@
 <!-- ========== ONBOARDING ========== -->
 <section class="screen" id="onb-welcome">
   <div style="margin-top:auto; margin-bottom:auto; text-align:center">
-    <div class="eyebrow" style="margin-bottom:14px">AEGIS · Tu red de protección</div>
+    <div class="eyebrow" style="margin-bottom:14px">PJ ALERT · Tu red de protección</div>
     <h1>No estás solo.</h1>
-    <p class="lead" style="margin:14px auto">Tu botón de pánico, tu círculo de confianza y la asesoría de AEGIS en una sola app. Hecha en México.</p>
+    <p class="lead" style="margin:14px auto">Tu botón de pánico, tu círculo de confianza y la asesoría de PJ ALERT en una sola app. Hecha en México.</p>
   </div>
   <button class="btn" id="onbStart">Comenzar</button>
 </section>
@@ -179,7 +179,7 @@
   <div class="head"><div class="back" data-go="onb-name">←</div></div>
   <div class="eyebrow">Paso 2 de 3</div>
   <h1 style="margin-top:8px">Tu círculo de confianza</h1>
-  <p class="lead">Agrega <b>al menos 2</b> personas a las que AEGIS avisará por WhatsApp en una emergencia. Familia, pareja, amistades cercanas.</p>
+  <p class="lead">Agrega <b>al menos 2</b> personas a las que PJ ALERT avisará por WhatsApp en una emergencia. Familia, pareja, amistades cercanas.</p>
   <div id="onbContactList" style="margin-top:18px"></div>
   <button class="btn ghost" id="onbAddContact" style="margin-top:10px">＋ Agregar contacto</button>
   <div style="margin-top:auto"><button class="btn" id="onbFinish" disabled style="opacity:.5">Continuar →</button></div>
@@ -189,7 +189,7 @@
   <div class="head"><div></div></div>
   <div class="eyebrow">&Uacute;ltimo paso</div>
   <h1 style="margin-top:8px">Activa tu ubicaci&#243;n</h1>
-  <p class="lead">Para que en una emergencia tus contactos te vean <b style="color:var(--ink)">en el mapa, en vivo</b>, AEGIS necesita permiso para usar tu ubicaci&#243;n. Sin esto, el SOS avisa pero <b>no muestra d&#243;nde est&#225;s</b>.</p>
+  <p class="lead">Para que en una emergencia tus contactos te vean <b style="color:var(--ink)">en el mapa, en vivo</b>, PJ ALERT necesita permiso para usar tu ubicaci&#243;n. Sin esto, el SOS avisa pero <b>no muestra d&#243;nde est&#225;s</b>.</p>
   <div class="protocol" style="margin-top:16px">&#128205; Al tocar &#8220;Permitir&#8221;, tu tel&#233;fono te preguntar&#225;. En <b>iPhone</b> elige <b>&#8220;Permitir una vez&#8221;</b> o <b>&#8220;Al usar la app&#8221;</b>.</div>
   <div style="margin-top:auto">
     <button class="btn" id="onbAllowLoc">Permitir ubicaci&#243;n</button>
@@ -200,11 +200,11 @@
 <section class="screen" id="onb-email">
   <div class="head"><div class="back" data-go="onb-contacts">←</div></div>
   <div class="eyebrow">Paso 3 de 3</div>
-  <h1 style="margin-top:8px">Crea tu cuenta AEGIS</h1>
+  <h1 style="margin-top:8px">Crea tu cuenta PJ ALERT</h1>
   <p class="lead">Con tu correo podemos <b style="color:var(--ink)">recuperar tu cuenta</b> si cambias de celular, enviarte <b style="color:var(--ink)">avisos importantes</b> de seguridad y un <b style="color:var(--ink)">tip semanal</b> real. Cero spam, cancelas cuando quieras.</p>
   <div style="margin-top:20px"><input class="input" id="emailInput" type="email" inputmode="email" autocomplete="email" placeholder="tu@correo.com" /></div>
-  <p style="font-size:11px;color:var(--muted);margin-top:12px;line-height:1.5">Al activar tu cuenta aceptas los <a href="/terminos.html" target="_blank" style="color:var(--accent);text-decoration:underline">Términos de Uso</a> y el <a href="/privacidad.html" target="_blank" style="color:var(--accent);text-decoration:underline">Aviso de Privacidad</a>. Tu correo solo se usa para AEGIS — nunca lo vendemos ni lo compartimos.</p>
-  <div style="margin-top:auto"><button class="btn" id="onbEmailFinish" disabled style="opacity:.5">⚡ Activar AEGIS</button></div>
+  <p style="font-size:11px;color:var(--muted);margin-top:12px;line-height:1.5">Al activar tu cuenta aceptas los <a href="/terminos.html" target="_blank" style="color:var(--accent);text-decoration:underline">Términos de Uso</a> y el <a href="/privacidad.html" target="_blank" style="color:var(--accent);text-decoration:underline">Aviso de Privacidad</a>. Tu correo solo se usa para PJ ALERT — nunca lo vendemos ni lo compartimos.</p>
+  <div style="margin-top:auto"><button class="btn" id="onbEmailFinish" disabled style="opacity:.5">⚡ Activar PJ ALERT</button></div>
 </section>
 
 <!-- ========== HOME ========== -->
@@ -238,7 +238,7 @@
 
 <!-- ========== SOS ACTIVE ========== -->
 <section class="screen" id="sosActive">
-  <div class="eyebrow">● SOS activo · AEGIS contigo</div>
+  <div class="eyebrow">● SOS activo · PJ ALERT contigo</div>
   <h1 style="margin-top:8px;font-size:24px" id="sosTitle">Tu círculo ya sabe</h1>
   <p class="lead" id="sosSub">Tu ubicación está lista. Toca <b>Enviar</b> a cada contacto.</p>
   <div id="sosLocStatus" class="protocol" style="display:none;margin-top:12px"></div>
@@ -264,13 +264,13 @@
     <a class="btn dark" href="tel:911" style="flex:1; text-align:center; text-decoration:none; padding:16px 0">📞 Llamar 911</a>
     <button class="btn green" id="sosSafe">Estoy a salvo</button>
   </div>
-  <div class="footer-note">AEGIS te acompaña; no sustituye a los servicios de emergencia oficiales.</div>
+  <div class="footer-note">PJ ALERT te acompaña; no sustituye a los servicios de emergencia oficiales.</div>
 </section>
 
 <!-- ========== ACOMPÁÑAME · SETUP ========== -->
 <section class="screen" id="acompSetup">
   <div class="head"><div class="back" data-go="home">←</div><h2>Acompáñame</h2><div></div></div>
-  <p class="lead">Sales sola/o. Si no marcas que llegaste, AEGIS avisa a tu contacto.</p>
+  <p class="lead">Sales sola/o. Si no marcas que llegaste, PJ ALERT avisa a tu contacto.</p>
 
   <div class="eyebrow" style="margin-top:20px">¿A dónde vas?</div>
   <div class="quick-grid" style="margin-top:8px" id="destQuick">
@@ -295,7 +295,7 @@
   <div id="acompContactPick" style="margin-top:8px"></div>
   <div class="eyebrow" style="margin-top:20px">Correo del contacto (opcional, recomendado)</div>
   <input class="input" id="acompContactEmail" type="email" placeholder="correo@contacto.com" style="margin-top:8px" />
-  <p class="lead" style="font-size:12px;margin-top:6px;color:var(--muted)">Si lo agregas, AEGIS le manda la alerta por correo aunque tu tel&#233;fono est&#233; apagado.</p>
+  <p class="lead" style="font-size:12px;margin-top:6px;color:var(--muted)">Si lo agregas, PJ ALERT le manda la alerta por correo aunque tu tel&#233;fono est&#233; apagado.</p>
 
   <div style="margin-top:20px"><button class="btn" id="acompStart" disabled style="opacity:.5">Empezar acompañamiento</button></div>
 </section>
@@ -323,14 +323,14 @@
 <!-- ========== CÍRCULO ========== -->
 <section class="screen" id="circulo">
   <div class="head"><div class="back" data-go="home">←</div><h2>Tu círculo de confianza</h2><div></div></div>
-  <p class="lead">Personas a las que AEGIS avisa por WhatsApp en una emergencia.</p>
+  <p class="lead">Personas a las que PJ ALERT avisa por WhatsApp en una emergencia.</p>
   <div id="circList" style="margin-top:18px"></div>
   <button class="btn ghost" id="circAdd" style="margin-top:10px">＋ Agregar contacto</button>
 </section>
 
 <!-- ========== ASESORÍA ========== -->
 <section class="screen" id="asesoria">
-  <div class="head"><div class="back" data-go="home">←</div><h2>Asesoría AEGIS</h2><div></div></div>
+  <div class="head"><div class="back" data-go="home">←</div><h2>Asesoría PJ ALERT</h2><div></div></div>
   <p class="lead">Protocolos rápidos para situaciones comunes. Léelos antes de que pase algo.</p>
   <div id="asesorList" style="margin-top:18px"></div>
   <div id="asesorDetail" class="asesor-detail" style="display:none"></div>
@@ -342,7 +342,7 @@
   <div class="card" style="margin-top:6px">
     <div class="eyebrow">Tu rese&#241;a</div>
     <div id="starPick" style="font-size:30px;letter-spacing:8px;margin:12px 0;cursor:pointer"></div>
-    <textarea class="input" id="revText" rows="3" maxlength="400" placeholder="Cu&#233;ntanos tu experiencia con AEGIS (opcional)" style="resize:none"></textarea>
+    <textarea class="input" id="revText" rows="3" maxlength="400" placeholder="Cu&#233;ntanos tu experiencia con PJ ALERT (opcional)" style="resize:none"></textarea>
     <button class="btn" id="revSend" style="margin-top:12px">Enviar rese&#241;a</button>
     <div id="revMsg" style="font-size:13px;margin-top:8px;min-height:18px"></div>
   </div>
@@ -357,17 +357,17 @@
     <input class="input" id="setName" type="text" maxlength="24" style="margin-top:8px" />
   </div>
   <div class="card" style="margin-top:10px">
-    <div class="eyebrow">Voz de AEGIS</div>
+    <div class="eyebrow">Voz de PJ ALERT</div>
     <label style="display:flex;align-items:center;gap:10px;margin-top:8px;font-size:14px">
       <input type="checkbox" id="setVoice" /> Activar voz en emergencias y acompañamiento
     </label>
   </div>
   <button class="btn dark" data-go="opiniones" style="margin-top:14px">&#11088; Opiniones y rese&#241;as</button>
-  <button class="btn dark" id="setShare" style="margin-top:10px">&#8599; Compartir AEGIS</button>
+  <button class="btn dark" id="setShare" style="margin-top:10px">&#8599; Compartir PJ ALERT</button>
   <button class="btn dark" id="setCourse" style="margin-top:10px">&#128214; El curso &#183; El Arte de Proteger</button>
   <button class="btn dark" data-go="circulo" style="margin-top:14px">Gestionar círculo de confianza</button>
-  <button class="btn ghost" id="setReset" style="margin-top:14px">Restablecer AEGIS (borrar todo)</button>
-  <div class="footer-note" style="line-height:1.7">AEGIS guarda tu información solo en este dispositivo. No es servicio oficial de emergencias.<br><br><a href="/privacidad.html" target="_blank" style="color:var(--accent);text-decoration:underline">Aviso de Privacidad</a> · <a href="/terminos.html" target="_blank" style="color:var(--accent);text-decoration:underline">Términos de Uso</a></div>
+  <button class="btn ghost" id="setReset" style="margin-top:14px">Restablecer PJ ALERT (borrar todo)</button>
+  <div class="footer-note" style="line-height:1.7">PJ ALERT guarda tu información solo en este dispositivo. No es servicio oficial de emergencias.<br><br><a href="/privacidad.html" target="_blank" style="color:var(--accent);text-decoration:underline">Aviso de Privacidad</a> · <a href="/terminos.html" target="_blank" style="color:var(--accent);text-decoration:underline">Términos de Uso</a></div>
 </section>
 
 <!-- ========== MODAL: AGREGAR CONTACTO ========== -->
@@ -536,7 +536,7 @@ function pad(n){ return n<10?('0'+n):(''+n); }
 function fmtMS(s){ var m=Math.max(0,Math.floor(s/60)), x=Math.max(0,s%60); return pad(m)+':'+pad(x); }
 function vibrate(p){ if(navigator.vibrate){ try{ navigator.vibrate(p); }catch(e){} } }
 
-/* ===================== VOZ AEGIS ===================== */
+/* ===================== VOZ PJ ALERT ===================== */
 var selectedVoice=null;
 var FEMALE_VOICE=/paulina|m[óo]nica|marisol|ang[ée]lica|soledad|esperanza|sabina|helena|laura|elena|google espa|female|mujer|femenin/i;
 function getVoice(){
@@ -753,8 +753,8 @@ function showFirstSosDisclaimer(onAccept){
   m.innerHTML='<div style="background:#0c131b;border:1px solid rgba(255,42,54,.4);border-radius:14px;padding:22px;max-width:420px;width:100%">'+
     '<div style="font-size:32px;text-align:center;margin-bottom:10px">⚠️</div>'+
     '<h2 style="font-size:18px;font-weight:700;margin-bottom:12px;text-align:center;color:var(--ink)">Antes de activar SOS</h2>'+
-    '<p style="font-size:14px;line-height:1.6;color:var(--muted);margin-bottom:10px"><b style="color:var(--ink)">AEGIS NO es servicio oficial de emergencias.</b> Si tu vida está en peligro inmediato, llama al <b style="color:var(--accent)">911</b> ahora.</p>'+
-    '<p style="font-size:14px;line-height:1.6;color:var(--muted);margin-bottom:10px">AEGIS depende de tu internet, GPS, WhatsApp y de que tu círculo responda. Estas cosas pueden fallar y AEGIS no garantiza que el aviso llegue.</p>'+
+    '<p style="font-size:14px;line-height:1.6;color:var(--muted);margin-bottom:10px"><b style="color:var(--ink)">PJ ALERT NO es servicio oficial de emergencias.</b> Si tu vida está en peligro inmediato, llama al <b style="color:var(--accent)">911</b> ahora.</p>'+
+    '<p style="font-size:14px;line-height:1.6;color:var(--muted);margin-bottom:10px">PJ ALERT depende de tu internet, GPS, WhatsApp y de que tu círculo responda. Estas cosas pueden fallar y PJ ALERT no garantiza que el aviso llegue.</p>'+
     '<p style="font-size:13px;line-height:1.6;color:var(--muted);margin-bottom:16px">Al continuar aceptas los <a href="/terminos.html" target="_blank" style="color:var(--accent);text-decoration:underline">Términos de Uso</a> y el <a href="/privacidad.html" target="_blank" style="color:var(--accent);text-decoration:underline">Aviso de Privacidad</a>.</p>'+
     '<button class="btn" id="discBtn" style="width:100%">Entendido, activar SOS</button>'+
     '<button class="btn ghost" id="discCancel" style="width:100%;margin-top:8px">Cancelar</button>'+
@@ -827,7 +827,7 @@ function renderSosContacts(){
       } else {
         msg += '\n\n(Aún no obtengo ubicación. Llámale ya.)';
       }
-      msg += '\n\n— AEGIS';
+      msg += '\n\n— PJ ALERT';
       var url='https://wa.me/'+c.phone+'?text='+encodeURIComponent(msg);
       row.classList.add('sent');
       row.querySelector('.send').textContent='✓ Enviado';
@@ -943,7 +943,7 @@ $('#acompStart').addEventListener('click', function(){
   startAcompWatch(); acompServerStart();
   save(LS.acomp, acomp);
   // Notificar al contacto de inicio
-  var msg='👋 Hola, soy AEGIS. '+user.name+' va saliendo hacia '+acomp.dest+' y me pidió avisarte. Llegada estimada: '+new Date(until).toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'})+'. Si no marca que llegó, te aviso de nuevo.';
+  var msg='👋 Hola, soy PJ ALERT. '+user.name+' va saliendo hacia '+acomp.dest+' y me pidió avisarte. Llegada estimada: '+new Date(until).toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'})+'. Si no marca que llegó, te aviso de nuevo.';
   window.open('https://wa.me/'+contact.phone+'?text='+encodeURIComponent(msg),'_blank');
   resumeAcompActive();
 });
@@ -997,7 +997,7 @@ function tickAcomp(){
 function triggerAcompAlert(){
   if(!acomp || !acomp.active) return;
   if(acompTickIv){ clearInterval(acompTickIv); acompTickIv=null; }
-  var msg='🚨 ALERTA · '+user.name+' no confirmó llegada a '+acomp.dest+' (se le acabó el tiempo programado en AEGIS). Por favor verifica si está bien.';
+  var msg='🚨 ALERTA · '+user.name+' no confirmó llegada a '+acomp.dest+' (se le acabó el tiempo programado en PJ ALERT). Por favor verifica si está bien.';
   var url='https://wa.me/'+acomp.contactPhone+'?text='+encodeURIComponent(msg);
   speak('Se acabó el tiempo. Ya estoy avisando a tu contacto por correo.');
   vibrate([300,100,300,100,300]);
@@ -1015,7 +1015,7 @@ $('#acompArrived').addEventListener('click', function(){
   acomp.active=false; save(LS.acomp, acomp);
   if(acompTickIv){ clearInterval(acompTickIv); acompTickIv=null; }
   if(contact && confirm('Avísale a '+contact.name+' que ya llegaste bien?')){
-    var msg='✅ '+user.name+' ya llegó a '+acomp.dest+'. Todo bien. — AEGIS';
+    var msg='✅ '+user.name+' ya llegó a '+acomp.dest+'. Todo bien. — PJ ALERT';
     window.open('https://wa.me/'+contact.phone+'?text='+encodeURIComponent(msg),'_blank');
   }
   show('home');
@@ -1167,7 +1167,7 @@ document.getElementById('revSend').addEventListener('click', function(){
     }).catch(function(){ m.style.color='#ff8088'; m.innerHTML='No se pudo enviar.'; b.disabled=false; b.innerHTML='Enviar rese&#241;a'; });
 });
 document.getElementById('setShare').addEventListener('click', function(){
-  var sd={ title:'AEGIS', text:'Te comparto AEGIS, app gratis de seguridad personal. SOS con ubicaci\u00f3n en vivo + modo Acomp\u00e1\u00f1ame.', url:'https://app.elartedelproteger.com' };
+  var sd={ title:'PJ ALERT', text:'Te comparto PJ ALERT, app gratis de seguridad personal. SOS con ubicaci\u00f3n en vivo + modo Acomp\u00e1\u00f1ame.', url:'https://app.elartedelproteger.com' };
   if(navigator.share){ navigator.share(sd).catch(function(){}); }
   else { try{ navigator.clipboard.writeText(sd.url); alert('Enlace copiado: '+sd.url); }catch(e){ window.open('https://wa.me/?text='+encodeURIComponent(sd.text+' '+sd.url),'_blank'); } }
 });
