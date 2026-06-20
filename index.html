@@ -386,7 +386,7 @@
       <option value="58">🇻🇪 +58</option>
       <option value="51">🇵🇪 +51</option>
     </select>
-    <input class="input" id="cPhone" type="tel" inputmode="numeric" placeholder="Número (10 dígitos)" maxlength="14" />
+    <input class="input" id="cPhone" type="tel" inputmode="numeric" placeholder="Número (10 dígitos)" maxlength="14" /><input class="input" id="cEmail" type="email" inputmode="email" placeholder="Correo (opcional, alerta autom&aacute;tica)" maxlength="80" style="margin-top:8px" />
   </div>
   <div style="margin-top:auto"><button class="btn" id="cSave" disabled style="opacity:.5">Guardar contacto</button></div>
 </section>
@@ -504,7 +504,7 @@ function enterHome(){
 var addReturnTo='circulo';
 function openAddContact(returnTo){
   addReturnTo=returnTo||'circulo';
-  $('#cNameInput').value=''; $('#cPhone').value=''; $('#cCC').value='52';
+  $('#cNameInput').value=''; $('#cPhone').value=''; $('#cEmail').value=''; $('#cCC').value='52';
   $('#cSave').disabled=true; $('#cSave').style.opacity='.5';
   show('addContact'); setTimeout(function(){ $('#cNameInput').focus(); }, 200);
 }
@@ -522,7 +522,7 @@ $('#cSave').addEventListener('click', function(){
   var cc=$('#cCC').value;
   var p=($('#cPhone').value||'').replace(/\D/g,'');
   if(n.length<2 || p.length<8) return;
-  contacts.push({id:'c'+Date.now()+Math.floor(Math.random()*999), name:n, phone:cc+p});
+  contacts.push({id:'c'+Date.now()+Math.floor(Math.random()*999), name:n, phone:cc+p, email:(($('#cEmail').value||'').trim())});
   save(LS.contacts, contacts);
   show(addReturnTo);
   if(addReturnTo==='onb-contacts') renderOnbContacts();
@@ -791,7 +791,7 @@ $('#cancelSos').addEventListener('click', function(){
   stopSpeak(); show('home');
 });
 
-function activateSos(){
+function sendSosEmails(){ try{ var withEmail=(contacts||[]).filter(function(c){return c&&c.email&&/.+@.+\..+/.test(c.email);}); if(!withEmail.length||!sosSessionId) return; var nm=(user&&user.name)?user.name:'Alguien'; fetch('/api/sos/alert',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sosId:sosSessionId,name:nm,emails:withEmail.map(function(c){return c.email;})})}).catch(function(){}); }catch(e){} } function activateSos(){
   show('sosActive');
   vibrate([100,80,100,80,200]);
   $('#sosTypeWrap').style.display='block';
@@ -799,7 +799,7 @@ function activateSos(){
 
   // 🚨 Alarma, seguimiento en vivo y escucha de respuestas
   startSosTracking();
-  startSosPolling();
+  startSosPolling(); sendSosEmails();
   updateAlarmBtn();
 
   // Pintar contactos en cuanto haya sessionId (la ubicación se completa cuando llega)
