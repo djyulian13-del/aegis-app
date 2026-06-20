@@ -14,7 +14,7 @@ function b64u(s){return btoa(unescape(encodeURIComponent(s))).replace(/\+/g,'-')
 
     if (path === '/api/sos/update' && request.method === 'POST') return cors(await sosUpdate(request, env));
     if (path === '/api/sos/get'    && request.method === 'GET')  return cors(await sosGet(request, env));
-    if (path === '/api/sos/status' && request.method === 'POST') return cors(await sosStatus(request, env));
+    if (path === '/api/sos/status' && request.method === 'POST') return cors(await sosStatus(request, env)); if (path === '/api/sos/alert' && request.method === 'POST') return cors(await sosAlert(request, env));
     if (path === '/api/acomp/start'   && request.method === 'POST') return cors(await acompStart(request, env));
     if (path === '/api/acomp/ping'    && request.method === 'POST') return cors(await acompPing(request, env));
     if (path === '/api/acomp/extend'  && request.method === 'POST') return cors(await acompExtend(request, env));
@@ -561,7 +561,7 @@ async function sendAcompAlert(env, e){
   });
 }
 
-async function reviewAdd(request, env){
+async function sosAlert(request, env){ let b; try{ b=await request.json(); }catch(e){ return json({ok:false,error:'bad body'},400); } const sosId=(b.sosId||'').toString().slice(0,60); const name=(b.name||'Alguien').toString().slice(0,40); let emails=Array.isArray(b.emails)?b.emails:[]; emails=emails.filter(function(x){return typeof x==='string'&&/.+@.+\..+/.test(x);}).slice(0,5); if(!sosId||!emails.length||!env.RESEND_API_KEY) return json({ok:false,error:'missing'},400); const link='https://app.elartedelproteger.com/sos.html?id='+encodeURIComponent(sosId); const fromAddr=env.RESEND_FROM||'PJ ALERT <aegis@elartedelproteger.com>'; const subject='ALERTA SOS de '+name+' - puede necesitar ayuda'; const html='<div style="font-family:-apple-system,system-ui,sans-serif;max-width:520px;margin:0 auto;background:#0a0405;color:#ffffff;border-radius:16px;overflow:hidden;"><div style="background:#e21621;padding:22px 20px;text-align:center;font-size:20px;font-weight:800;letter-spacing:.04em;">ALERTA SOS</div><div style="padding:24px 22px;"><p style="font-size:16px;line-height:1.5;margin:0 0 16px;"><b>'+name+'</b> activ&oacute; una alerta de emergencia en PJ ALERT y te eligi&oacute; como contacto de confianza.</p><p style="font-size:15px;line-height:1.5;color:#cbb6b8;margin:0 0 22px;">Abre el enlace para ver su <b style="color:#ffffff;">ubicaci&oacute;n en vivo</b> (se actualiza sola). Si crees que est&aacute; en peligro, ll&aacute;male y, si es necesario, marca al 911.</p><div style="text-align:center;"><a href="'+link+'" style="display:inline-block;background:#e21621;color:#ffffff;font-size:16px;font-weight:800;text-decoration:none;padding:15px 32px;border-radius:99px;">Ver ubicaci&oacute;n en vivo</a></div><p style="font-size:12px;color:#8f7d80;margin:22px 0 0;word-break:break-all;text-align:center;">'+link+'</p></div></div>'; let sent=0,failed=0; for(const email of emails){ try{ const r=await fetch('https://api.resend.com/emails',{method:'POST',headers:{'Authorization':'Bearer '+env.RESEND_API_KEY,'Content-Type':'application/json'},body:JSON.stringify({from:fromAddr,to:[email],subject:subject,html:html})}); if(r.ok)sent++;else failed++; }catch(e){ failed++; } } return json({ok:true,total:emails.length,sent,failed}); } async function reviewAdd(request, env){
   let d; try{ d=await request.json(); }catch(e){ return json({ok:false},400); }
   if(!d) return json({ok:false},400);
   const stars = Math.max(1, Math.min(5, parseInt(d.stars,10)||0));
