@@ -5,7 +5,7 @@
 const TTL = 24 * 60 * 60; // 24 horas
 const MAX_HISTORY = 60; // redeploy
 
-export default {
+function b64u(s){return btoa(unescape(encodeURIComponent(s))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');} function unb64u(s){s=(s||'').replace(/-/g,'+').replace(/_/g,'/');try{return decodeURIComponent(escape(atob(s)));}catch(_){return '';}} function unsubUrl(email){return 'https://app.elartedelproteger.com/api/unsub?e='+b64u(email);} function unsubFooter(email){return '<div style="margin-top:26px;padding-top:16px;border-top:1px solid rgba(0,0,0,.08);font:400 12px/1.6 -apple-system,system-ui,sans-serif;color:#9a9a9a;text-align:center;">Recibes este correo porque te registraste en PJ ALERT.<br>Si ya no quieres recibirlos, <a href="'+unsubUrl(email)+'" style="color:#9a9a9a;">date de baja aqu&iacute;</a>.</div>';} async function handleUnsub(request,env){const url=new URL(request.url);let email=unb64u(url.searchParams.get('e')||'').trim();if(email){try{await env.AEGIS_SOS.delete('sub:'+email);await env.AEGIS_SOS.delete('sub:'+email.toLowerCase());}catch(_){}}if(request.method==='POST'){return new Response('ok',{status:200});}const page='<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Baja confirmada</title></head><body style="margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;background:#0a0405;color:#fff;font-family:-apple-system,system-ui,sans-serif;text-align:center;"><div style="max-width:440px;padding:32px;"><div style="font-size:44px;line-height:1;margin-bottom:14px;color:#ff5c5c;">&#10003;</div><h1 style="margin:0 0 10px;font-size:22px;">Listo, te diste de baja</h1><p style="margin:0;color:#cbb6b8;font-size:15px;line-height:1.6;">Ya no recibir&aacute;s m&aacute;s correos de PJ ALERT'+(email?(' en <b>'+email+'</b>'):'')+'. Si fue un error, puedes volver a registrarte en la app cuando quieras.</p></div></body></html>';return new Response(page,{status:200,headers:{'Content-Type':'text/html; charset=utf-8'}});} export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
     const path = url.pathname;
@@ -21,7 +21,7 @@ export default {
     if (path === '/api/acomp/checkin' && request.method === 'POST') return cors(await acompCheckin(request, env));
     if (path === '/api/review'    && request.method === 'POST') return cors(await reviewAdd(request, env));
     if (path === '/api/reviews'   && request.method === 'GET')  return cors(await reviewsGet(request, env));
-    if (path === '/api/subscribe'  && request.method === 'POST') return cors(await subscribe(request, env));
+    if (path === '/api/subscribe'  && request.method === 'POST') return cors(await subscribe(request, env)); if (path === '/api/unsub') return await handleUnsub(request, env);
     if (path === '/api/admin/stats' && request.method === 'GET') return cors(await adminStats(request, env));
     if (path === '/api/admin/broadcast' && request.method === 'POST') return cors(await broadcast(request, env)); if (path === '/api/admin/rebuild' && request.method === 'POST') return cors(await adminRebuild(request, env));
 
@@ -198,7 +198,7 @@ async function sendWelcomeEmail(env, email, name){
 <tr><td style="padding:0 24px;">
   <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background:#0c131b;border:1px solid rgba(255,42,54,.25);border-radius:16px;">
     <tr><td style="padding:24px 24px 22px;">
-      <div style="font-family:'SFMono-Regular',Menlo,Consolas,monospace;font-size:10px;letter-spacing:.32em;color:#ff2a36;text-transform:uppercase;margin-bottom:8px;">▸ Protocolo de iniciación · #01</div>
+      <div style="font-family:'SFMono-Regular',Menlo,Consolas,monospace;font-size:10px;letter-spacing:.32em;color:#ff2a36;text-transform:uppercase;margin-bottom:8px;">▸ Protocolo de bienvenida</div>
       <h2 style="margin:0 0 14px;font-size:20px;font-weight:700;color:#f4eaea;line-height:1.25;">Las llaves SIEMPRE en la mano</h2>
       <p style="margin:0 0 12px;font-size:15px;line-height:1.65;color:#e4d8da;">Al llegar a tu casa o auto, ten las llaves <strong style="color:#fff;">en la mano antes de bajar</strong>. Nunca las busques al llegar a la puerta.</p>
       <p style="margin:0 0 14px;font-size:15px;line-height:1.65;color:#e4d8da;">Esos 8 a 15 segundos buscando llaves son los que un agresor necesita para alcanzarte.</p>
@@ -312,7 +312,7 @@ async function sendWelcomeEmail(env, email, name){
       from: fromAddr,
       to: [email],
       subject: `🛡 Estoy contigo, ${firstName}. Tu sistema PJ ALERT está activo.`,
-      html: html
+      html: html + unsubFooter(email), headers: { 'List-Unsubscribe': '<' + unsubUrl(email) + '>', 'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click' }
     })
   });
 }
@@ -333,7 +333,7 @@ async function pushRecent(env, key, item, max){
   await env.AEGIS_SOS.put(key, JSON.stringify(cur));
 }
 
-async function broadcast(request, env){ const u=new URL(request.url); const key=u.searchParams.get('key')||request.headers.get('x-admin-key')||''; if(!env.ADMIN_KEY||key!==env.ADMIN_KEY) return json({ok:false,error:'unauthorized'},401); let b; try{ b=await request.json(); }catch(e){ return json({ok:false,error:'bad body'},400); } const subject=(b.subject||'').toString(); const html=(b.html||'').toString(); if(!subject||!html||!env.RESEND_API_KEY) return json({ok:false,error:'missing'},400); const fromAddr=env.RESEND_FROM||'PJ ALERT <aegis@elartedelproteger.com>'; const listing=await env.AEGIS_SOS.list({prefix:'sub:'}); let sent=0,failed=0; for(const k of listing.keys){ const email=k.name.slice(4); try{ const r=await fetch('https://api.resend.com/emails',{method:'POST',headers:{'Authorization':'Bearer '+env.RESEND_API_KEY,'Content-Type':'application/json'},body:JSON.stringify({from:fromAddr,to:[email],subject:subject,html:html})}); if(r.ok)sent++;else failed++; }catch(e){ failed++; } } return json({ok:true,total:listing.keys.length,sent,failed}); } async function adminStats(request, env){
+async function broadcast(request, env){ const u=new URL(request.url); const key=u.searchParams.get('key')||request.headers.get('x-admin-key')||''; if(!env.ADMIN_KEY||key!==env.ADMIN_KEY) return json({ok:false,error:'unauthorized'},401); let b; try{ b=await request.json(); }catch(e){ return json({ok:false,error:'bad body'},400); } const subject=(b.subject||'').toString(); const html=(b.html||'').toString(); if(!subject||!html||!env.RESEND_API_KEY) return json({ok:false,error:'missing'},400); const fromAddr=env.RESEND_FROM||'PJ ALERT <aegis@elartedelproteger.com>'; const listing=await env.AEGIS_SOS.list({prefix:'sub:'}); let sent=0,failed=0; for(const k of listing.keys){ const email=k.name.slice(4); try{ const r=await fetch('https://api.resend.com/emails',{method:'POST',headers:{'Authorization':'Bearer '+env.RESEND_API_KEY,'Content-Type':'application/json'},body:JSON.stringify({from:fromAddr,to:[email],subject:subject,html:html+unsubFooter(email),headers:{'List-Unsubscribe':'<'+unsubUrl(email)+'>','List-Unsubscribe-Post':'List-Unsubscribe=One-Click'}})}); if(r.ok)sent++;else failed++; }catch(e){ failed++; } } return json({ok:true,total:listing.keys.length,sent,failed}); } async function adminStats(request, env){
   // Auth: ?key=... o header x-admin-key
   const url = new URL(request.url);
   const key = url.searchParams.get('key') || request.headers.get('x-admin-key') || '';
