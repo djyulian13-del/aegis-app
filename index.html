@@ -1167,7 +1167,7 @@ document.getElementById('revSend').addEventListener('click', function(){
     }).catch(function(){ m.style.color='#ff8088'; m.innerHTML='No se pudo enviar.'; b.disabled=false; b.innerHTML='Enviar rese&#241;a'; });
 });
 document.getElementById('setShare').addEventListener('click', function(){
-  var sd={ title:'PJ ALERT', text:'Te comparto PJ ALERT, app gratis de seguridad personal. SOS con ubicaci\u00f3n en vivo + modo Acomp\u00e1\u00f1ame.', url:'https://app.elartedelproteger.com' };
+  var sd={ title:'PJ ALERT', text:'Tu seguridad me importa. Te paso PJ ALERT: una app gratis con botón SOS que avisa a tu gente de confianza con tu ubicación en vivo si estás en peligro. Se instala en segundos, sin tienda de apps. Descárgala gratis aquí:', url:'https://app.elartedelproteger.com' };
   if(navigator.share){ navigator.share(sd).catch(function(){}); }
   else { try{ navigator.clipboard.writeText(sd.url); alert('Enlace copiado: '+sd.url); }catch(e){ window.open('https://wa.me/?text='+encodeURIComponent(sd.text+' '+sd.url),'_blank'); } }
 });
