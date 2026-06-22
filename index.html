@@ -957,7 +957,7 @@ function acompPingNow(){
   if(!acomp || !acomp.serverId || !acompLastPos) return;
   try{ fetch('/api/acomp/ping', { method:'POST', headers:{'content-type':'application/json'}, body: JSON.stringify({ id:acomp.serverId, lat:acompLastPos.lat, lng:acompLastPos.lng }) }).catch(function(){}); }catch(e){}
 }
-function startAcompWatch(){
+function startAcompWatch(){ try{ if(navigator.geolocation) navigator.geolocation.getCurrentPosition(function(pos){ acompLastPos={lat:pos.coords.latitude,lng:pos.coords.longitude}; acompPingNow(); }, function(){}, {enableHighAccuracy:true,timeout:15000,maximumAge:0}); }catch(e){}
   if(navigator.geolocation){ try{ acompWatchId=navigator.geolocation.watchPosition(function(pos){ acompLastPos={ lat:pos.coords.latitude, lng:pos.coords.longitude }; acompPingNow(); }, function(){}, {enableHighAccuracy:true, timeout:15000, maximumAge:5000}); }catch(e){} }
   if(acompPingIv) clearInterval(acompPingIv);
   acompPingIv=setInterval(acompPingNow, 30000);
