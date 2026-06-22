@@ -540,7 +540,7 @@ async function sendAcompAlert(env, e){
   const hasLoc = (e.lat!=null && e.lng!=null);
   const mapUrl = hasLoc ? ('https://www.google.com/maps?q='+e.lat+','+e.lng) : '';
   const waUrl = e.contactPhone ? ('https://wa.me/'+e.contactPhone) : '';
-  const hora = new Date(e.until).toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'});
+  const hora = new Date(e.until).toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit',timeZone:'America/Mexico_City'});
   const name = escapeHtmlW(e.name); const dest = escapeHtmlW(e.dest);
   const html = '<!doctype html><html lang="es"><body style="margin:0;background:#070405;font-family:-apple-system,Segoe UI,Roboto,Arial,sans-serif;color:#f4eaea">' +
     '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#070405"><tr><td align="center" style="padding:30px 16px">' +
